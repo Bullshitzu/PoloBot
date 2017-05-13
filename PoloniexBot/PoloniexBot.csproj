@@ -1,0 +1,436 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{96C9E4F4-8223-4CC7-A2DC-EBA9194CFEDA}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>PoloniexBot</RootNamespace>
+    <AssemblyName>PoloniexBot</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Castle.Core">
+      <HintPath>..\packages\Castle.Core.3.3.1\lib\net45\Castle.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Fleck">
+      <HintPath>..\packages\Fleck.0.13.0.57\lib\net40\Fleck.dll</HintPath>
+    </Reference>
+    <Reference Include="MsgPack">
+      <HintPath>..\packages\MsgPack.Cli.0.6.2\lib\net45\MsgPack.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Msgpack">
+      <HintPath>..\packages\Newtonsoft.Msgpack.0.1.8\lib\net45\Newtonsoft.Msgpack.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.core">
+      <HintPath>..\packages\NUnitTestAdapter.2.0.0\lib\nunit.core.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="nunit.core.interfaces">
+      <HintPath>..\packages\NUnitTestAdapter.2.0.0\lib\nunit.core.interfaces.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="nunit.framework">
+      <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.util">
+      <HintPath>..\packages\NUnitTestAdapter.2.0.0\lib\nunit.util.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="NUnit.VisualStudio.TestAdapter">
+      <HintPath>..\packages\NUnitTestAdapter.2.0.0\lib\NUnit.VisualStudio.TestAdapter.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Interactive.Async">
+      <HintPath>..\packages\Ix-Async.1.2.5\lib\net45\System.Interactive.Async.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Reactive.Core">
+      <HintPath>..\packages\Rx-Core.2.2.5\lib\net45\System.Reactive.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Interfaces">
+      <HintPath>..\packages\Rx-Interfaces.2.2.5\lib\net45\System.Reactive.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.Linq">
+      <HintPath>..\packages\Rx-Linq.2.2.5\lib\net45\System.Reactive.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reactive.PlatformServices">
+      <HintPath>..\packages\Rx-PlatformServices.2.2.5\lib\net45\System.Reactive.PlatformServices.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Json">
+      <HintPath>..\packages\System.Text.Json.2.0.0.11\lib\net40\System.Text.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WampSharp">
+      <HintPath>..\packages\WampSharp.1.2.3.17-beta\lib\net45\WampSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="WampSharp.Default.Client">
+      <HintPath>..\packages\WampSharp.Default.Client.1.2.3.17-beta\lib\net45\WampSharp.Default.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="WampSharp.Default.Router">
+      <HintPath>..\packages\WampSharp.Default.Router.1.2.3.17-beta\lib\net45\WampSharp.Default.Router.dll</HintPath>
+    </Reference>
+    <Reference Include="WampSharp.Fleck">
+      <HintPath>..\packages\WampSharp.Fleck.1.2.3.17-beta\lib\net45\WampSharp.Fleck.dll</HintPath>
+    </Reference>
+    <Reference Include="WampSharp.NewtonsoftJson">
+      <HintPath>..\packages\WampSharp.NewtonsoftJson.1.2.3.17-beta\lib\net45\WampSharp.NewtonsoftJson.dll</HintPath>
+    </Reference>
+    <Reference Include="WampSharp.NewtonsoftMsgpack">
+      <HintPath>..\packages\WampSharp.NewtonsoftMsgpack.1.2.3.17-beta\lib\net45\WampSharp.NewtonsoftMsgpack.dll</HintPath>
+    </Reference>
+    <Reference Include="WampSharp.WebSocket4Net">
+      <HintPath>..\packages\WampSharp.WebSocket4Net.1.2.3.17-beta\lib\net45\WampSharp.WebSocket4Net.dll</HintPath>
+    </Reference>
+    <Reference Include="WebSocket4Net">
+      <HintPath>..\packages\WebSocket4Net.0.14\lib\net45\WebSocket4Net.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ClientManager.cs" />
+    <Compile Include="CLI\Commands\Commands.cs" />
+    <Compile Include="CLI\Commands\Command.cs" />
+    <Compile Include="CLI\Manager.cs" />
+    <Compile Include="Data\Analysis.cs" />
+    <Compile Include="Data\ANN\Network.cs" />
+    <Compile Include="Data\ANN\Neuron.cs" />
+    <Compile Include="Data\ANN\Synapse.cs" />
+    <Compile Include="Data\PatternMatching.cs" />
+    <Compile Include="Data\Predictor.cs" />
+    <Compile Include="Data\Predictors\ADX.cs" />
+    <Compile Include="Data\Predictors\Ichimoku.cs" />
+    <Compile Include="Data\Predictors\MACD.cs" />
+    <Compile Include="Data\Predictors\MacdTrendBlocker.cs" />
+    <Compile Include="Data\Predictors\MeanReversion.cs" />
+    <Compile Include="Data\Predictors\PriceData.cs" />
+    <Compile Include="Data\Predictors\PriceDelta.cs" />
+    <Compile Include="Data\Predictors\RSI.cs" />
+    <Compile Include="Data\Predictors\TrendLines.cs" />
+    <Compile Include="Data\Predictors\Volume.cs" />
+    <Compile Include="Data\StopLoss.cs" />
+    <Compile Include="Data\ResultSet.cs" />
+    <Compile Include="Data\Store.cs" />
+    <Compile Include="Poloniex\LiveTools\LiveCustom.cs" />
+    <Compile Include="Poloniex\TradingTools\TradingCustom.cs" />
+    <Compile Include="Trading\DataStructures.cs" />
+    <Compile Include="Trading\Manager.cs" />
+    <Compile Include="Trading\TPManager.cs" />
+    <Compile Include="Training.cs" />
+    <Compile Include="Utility\APICallTracker.cs" />
+    <Compile Include="Utility\DrawingHelper.cs" />
+    <Compile Include="Utility\ErrorLog.cs" />
+    <Compile Include="Utility\FileManager.cs" />
+    <Compile Include="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form1.Designer.cs">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Poloniex\General\ApiWebClient.cs" />
+    <Compile Include="Poloniex\General\Authenticator.cs" />
+    <Compile Include="Poloniex\General\CurrencyPair.cs" />
+    <Compile Include="Poloniex\General\EventArgs\TickerChangedEventArgs.cs" />
+    <Compile Include="Poloniex\General\EventArgs\TrollboxMessageEventArgs.cs" />
+    <Compile Include="Poloniex\General\JsonResponse.cs" />
+    <Compile Include="Poloniex\General\ObservableDictionary.cs" />
+    <Compile Include="Poloniex\General\OrderType.cs" />
+    <Compile Include="Poloniex\JsonParser.cs" />
+    <Compile Include="Poloniex\LiveTools\Live.cs" />
+    <Compile Include="Poloniex\LiveTools\Live.Interface.cs" />
+    <Compile Include="Poloniex\MarketTools\MarketChartData.cs" />
+    <Compile Include="Poloniex\MarketTools\MarketChartData.Interface.cs" />
+    <Compile Include="Poloniex\MarketTools\MarketData.cs" />
+    <Compile Include="Poloniex\MarketTools\MarketData.Interface.cs" />
+    <Compile Include="Poloniex\MarketTools\MarketPeriod.cs" />
+    <Compile Include="Poloniex\MarketTools\Markets.cs" />
+    <Compile Include="Poloniex\MarketTools\Markets.Interface.cs" />
+    <Compile Include="Poloniex\MarketTools\MarketsCustom.cs" />
+    <Compile Include="Poloniex\MarketTools\Order.cs" />
+    <Compile Include="Poloniex\MarketTools\Order.Interface.cs" />
+    <Compile Include="Poloniex\MarketTools\OrderBook.cs" />
+    <Compile Include="Poloniex\MarketTools\OrderBook.Interface.cs" />
+    <Compile Include="Poloniex\MarketTools\Trade.cs" />
+    <Compile Include="Poloniex\MarketTools\Trade.Interface.cs" />
+    <Compile Include="Poloniex\PoloniexClient.cs" />
+    <Compile Include="Poloniex\Helper.cs" />
+    <Compile Include="Poloniex\TradingTools\Order.cs" />
+    <Compile Include="Poloniex\TradingTools\Order.Interface.cs" />
+    <Compile Include="Poloniex\TradingTools\Trade.cs" />
+    <Compile Include="Poloniex\TradingTools\Trade.Interface.cs" />
+    <Compile Include="Poloniex\TradingTools\Trading.cs" />
+    <Compile Include="Poloniex\TradingTools\Trading.Interface.cs" />
+    <Compile Include="Poloniex\TradingTools\TradingSimulated.cs" />
+    <Compile Include="Poloniex\WalletTools\Balance.cs" />
+    <Compile Include="Poloniex\WalletTools\Balance.Interface.cs" />
+    <Compile Include="Poloniex\WalletTools\WalletCustom.cs" />
+    <Compile Include="Poloniex\WalletTools\Deposit.cs" />
+    <Compile Include="Poloniex\WalletTools\Deposit.Interface.cs" />
+    <Compile Include="Poloniex\WalletTools\DepositWithdrawalList.cs" />
+    <Compile Include="Poloniex\WalletTools\DepositWithdrawalList.Interface.cs" />
+    <Compile Include="Poloniex\WalletTools\GeneratedDepositAddress.cs" />
+    <Compile Include="Poloniex\WalletTools\GeneratedDepositAddress.Interface.cs" />
+    <Compile Include="Poloniex\WalletTools\Wallet.cs" />
+    <Compile Include="Poloniex\WalletTools\Wallet.Interface.cs" />
+    <Compile Include="Poloniex\WalletTools\WalletSimulated.cs" />
+    <Compile Include="Poloniex\WalletTools\Withdrawal.cs" />
+    <Compile Include="Poloniex\WalletTools\Withdrawal.Interface.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Simulation.cs" />
+    <Compile Include="Utility\DateTimeHelper.cs" />
+    <Compile Include="Utility\Log\Manager.cs" />
+    <Compile Include="Utility\Log\MessageTypes.cs" />
+    <Compile Include="Utility\MarketDataComparer.cs" />
+    <Compile Include="Utility\Math.cs" />
+    <Compile Include="Utility\NetworkStatus.cs" />
+    <Compile Include="Utility\ThreadManager.cs" />
+    <Compile Include="Utility\TradeTracker.cs" />
+    <Compile Include="Utility\TSDictionary.cs" />
+    <Compile Include="Utility\TSList.cs" />
+    <Compile Include="Utility\WebApiCustom.cs" />
+    <Compile Include="Windows\ChartWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\ChartWindow.Designer.cs">
+      <DependentUpon>ChartWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\ButtonSimple.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\ButtonSimple.Designer.cs">
+      <DependentUpon>ButtonSimple.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\ChartScreen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\ChartScreen.Designer.cs">
+      <DependentUpon>ChartScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\MultiThreadControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\MultiThreadControl.Designer.cs">
+      <DependentUpon>MultiThreadControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\PerformanceScreen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\PerformanceScreen.Designer.cs">
+      <DependentUpon>PerformanceScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\PredictorsScreen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\PredictorsScreen.Designer.cs">
+      <DependentUpon>PredictorsScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\TradeHistoryScreen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\TradeHistoryScreen.Designer.cs">
+      <DependentUpon>TradeHistoryScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\WalletScreen.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\WalletScreen.Designer.cs">
+      <DependentUpon>WalletScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ErrorWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\ErrorWindow.Designer.cs">
+      <DependentUpon>ErrorWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\FormCustom.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\PerformanceWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\PerformanceWindow.Designer.cs">
+      <DependentUpon>PerformanceWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\PredictorsWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\PredictorsWindow.Designer.cs">
+      <DependentUpon>PredictorsWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ScoreWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\ScoreWindow.Designer.cs">
+      <DependentUpon>ScoreWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ConsoleWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\ConsoleWindow.Designer.cs">
+      <DependentUpon>ConsoleWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\Chatbox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\Chatbox.Designer.cs">
+      <DependentUpon>Chatbox.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\ConsoleScreen.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\ConsoleScreen.Designer.cs">
+      <DependentUpon>ConsoleScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\ScoreScreen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\ScoreScreen.Designer.cs">
+      <DependentUpon>ScoreScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Controls\TickerFeed.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\TickerFeed.Designer.cs">
+      <DependentUpon>TickerFeed.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\GUIManager.cs" />
+    <Compile Include="Windows\AccountStatusWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\AccountStatusWindow.Designer.cs">
+      <DependentUpon>AccountStatusWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\TickerFeedWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\TickerFeedWindow.Designer.cs">
+      <DependentUpon>TickerFeedWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\TradeHistoryWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\TradeHistoryWindow.Designer.cs">
+      <DependentUpon>TradeHistoryWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\TrollboxWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\TrollboxWindow.Designer.cs">
+      <DependentUpon>TrollboxWindow.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <EmbeddedResource Include="Windows\AccountStatusWindow.resx">
+      <DependentUpon>AccountStatusWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\ChartWindow.resx">
+      <DependentUpon>ChartWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\Controls\ButtonSimple.resx">
+      <DependentUpon>ButtonSimple.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\Controls\PerformanceScreen.resx">
+      <DependentUpon>PerformanceScreen.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\Controls\TradeHistoryScreen.resx">
+      <DependentUpon>TradeHistoryScreen.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\ErrorWindow.resx">
+      <DependentUpon>ErrorWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\PerformanceWindow.resx">
+      <DependentUpon>PerformanceWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\PredictorsWindow.resx">
+      <DependentUpon>PredictorsWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\ScoreWindow.resx">
+      <DependentUpon>ScoreWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\ConsoleWindow.resx">
+      <DependentUpon>ConsoleWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\TickerFeedWindow.resx">
+      <DependentUpon>TickerFeedWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\TradeHistoryWindow.resx">
+      <DependentUpon>TradeHistoryWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\TrollboxWindow.resx">
+      <DependentUpon>TrollboxWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="packages.config" />
+    <Compile Include="Poloniex\General\Authenticator.Interface.cs" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

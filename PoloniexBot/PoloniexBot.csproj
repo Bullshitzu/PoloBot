@@ -144,7 +144,6 @@
     <Compile Include="Data\Predictors\PriceData.cs" />
     <Compile Include="Data\Predictors\PriceDelta.cs" />
     <Compile Include="Data\Predictors\RSI.cs" />
-    <Compile Include="Data\Predictors\TrendLines.cs" />
     <Compile Include="Data\Predictors\Volume.cs" />
     <Compile Include="Data\StopLoss.cs" />
     <Compile Include="Data\ResultSet.cs" />
@@ -153,6 +152,9 @@
     <Compile Include="Poloniex\TradingTools\TradingCustom.cs" />
     <Compile Include="Trading\DataStructures.cs" />
     <Compile Include="Trading\Manager.cs" />
+    <Compile Include="Trading\Strategies\LowAlts.cs" />
+    <Compile Include="Trading\Strategies\MeanReverse.cs" />
+    <Compile Include="Trading\Strategies\Strategy.cs" />
     <Compile Include="Trading\TPManager.cs" />
     <Compile Include="Training.cs" />
     <Compile Include="Utility\APICallTracker.cs" />

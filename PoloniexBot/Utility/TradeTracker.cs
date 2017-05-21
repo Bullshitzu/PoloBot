@@ -12,36 +12,86 @@ namespace Utility {
         const string Filename = "openPositions.data";
 
         static TradeTracker () {
-            buyTrades = new List<TradeData>();
-            sellTrades = new List<TradeData>();
-            matches = new List<TradeMatch>();
+            Trades = new List<TradeData>();
+            DoneTrades = new List<TradeData>();
         }
 
         public struct TradeData {
             public CurrencyPair pair;
-            public double amountQuote;
-            public double price;
-            public long timestamp;
-            public bool matched;
+            public double buyAmountQuote;
+            public double buyPrice;
+            public long buyTimestamp;
 
+            public bool sold;
             public double openPrice;
 
+            public double sellAmountQuote;
+            public double sellPrice;
+            public long sellTimestamp;
+
+            public double percentGain;
+            public double netGainBtc;
+            public double cumulativeNetGainBtc;
+
             public TradeData (CurrencyPair pair, double amountQuote, double price, long timestamp) {
+                
+                // Buy constructor
+                
                 this.pair = pair;
-                this.amountQuote = amountQuote;
-                this.price = price;
+                this.buyAmountQuote = amountQuote;
+                this.buyPrice = price;
+                this.buyTimestamp = timestamp;
+
                 this.openPrice = price;
-                this.timestamp = timestamp;
-                matched = false;
+                sold = false;
+
+                sellAmountQuote = 0;
+                sellPrice = 0;
+                sellTimestamp = 0;
+
+                percentGain = 0;
+                netGainBtc = 0;
+                cumulativeNetGainBtc = 0;
             }
             public TradeData (TradeData old, double newOpenPrice) {
-                pair = old.pair;
-                amountQuote = old.amountQuote;
-                price = old.price;
-                timestamp = old.timestamp;
-                matched = old.matched;
+
+                // Update constructor
+
+                this.pair = old.pair;
+                this.buyAmountQuote = old.buyAmountQuote;
+                this.buyPrice = old.buyPrice;
+                this.buyTimestamp = old.buyTimestamp;
 
                 openPrice = newOpenPrice;
+                sold = false;
+
+                sellAmountQuote = 0;
+                sellPrice = 0;
+                sellTimestamp = 0;
+
+                percentGain = 0;
+                netGainBtc = 0;
+                cumulativeNetGainBtc = 0;
+            }
+            public TradeData (TradeData old, double amountQuote, double price, long timestamp) {
+
+                // Sold constructor
+
+                this.pair = old.pair;
+                this.buyAmountQuote = old.buyAmountQuote;
+                this.buyPrice = old.buyPrice;
+                this.buyTimestamp = old.buyTimestamp;
+
+                openPrice = price;
+                sold = true;
+
+                sellAmountQuote = amountQuote;
+                sellPrice = price;
+                sellTimestamp = timestamp;
+
+                percentGain = ((sellPrice - buyPrice) / buyPrice) * 100;
+                netGainBtc = (sellAmountQuote * sellPrice) - (buyAmountQuote * buyPrice);
+                cumulativeNetGainBtc = 0;
             }
 
             public static TradeData Parse (string[] lines) {
@@ -55,49 +105,27 @@ namespace Utility {
                 return new TradeData(pair, amountQuote, price, timestamp);
             }
             public string[] Serialize () {
-                string[] data = { pair.ToString(), timestamp.ToString(), amountQuote.ToString("F8"), price.ToString("F8") };
+                string[] data = { pair.ToString(), buyTimestamp.ToString(), buyAmountQuote.ToString("F8"), buyPrice.ToString("F8") };
                 return data;
             }
         }
-        public struct TradeMatch {
-            public TradeData buyTrade;
-            public TradeData sellTrade;
-
-            public double percentGain;
-            public double netGainBtc;
-            public double cumulativeNetGainBtc;
-
-            public TradeMatch (TradeData buyTrade, TradeData sellTrade) {
-                this.buyTrade = buyTrade;
-                this.sellTrade = sellTrade;
-
-                buyTrade.matched = true;
-                sellTrade.matched = true;
-
-                percentGain = ((sellTrade.price - buyTrade.price) / buyTrade.price) * 100;
-                netGainBtc = (sellTrade.amountQuote * sellTrade.price) - (buyTrade.amountQuote * buyTrade.price);
-                cumulativeNetGainBtc = 0;
-            }
-        }
-
-        private static List<TradeData> buyTrades;
-        private static List<TradeData> sellTrades;
-        private static List<TradeMatch> matches;
+        
+        private static List<TradeData> Trades;
+        private static List<TradeData> DoneTrades;
 
         public static void ClearAll () {
-            if (buyTrades != null) buyTrades.Clear();
-            if (sellTrades != null) sellTrades.Clear();
-            if (matches != null) matches.Clear();
+            if (Trades != null) Trades.Clear();
+            if (DoneTrades != null) DoneTrades.Clear();
         }
 
         public static void ReportBuy (CurrencyPair pair, double amountQuote, double price) {
             ReportBuy(pair, amountQuote, price, DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now));
         }
         public static void ReportBuy (CurrencyPair pair, double amountQuote, double price, long timestamp) {
-            if (buyTrades == null) buyTrades = new List<TradeData>();
+            if (Trades == null) Trades = new List<TradeData>();
 
             TradeData tempData = new TradeData(pair, amountQuote, price, timestamp);
-            buyTrades.Add(tempData);
+            Trades.Add(tempData);
 
             UpdateTradesGUI();
 
@@ -108,35 +136,27 @@ namespace Utility {
             ReportSell(pair, amountQuote, price, DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now));
         }
         public static void ReportSell (CurrencyPair pair, double amountQuote, double price, long timestamp) {
-            if (sellTrades == null) sellTrades = new List<TradeData>();
+            if (Trades == null) return;
+            if (DoneTrades == null) DoneTrades = new List<TradeData>();
 
-            TradeData tempData = new TradeData(pair, amountQuote, price, timestamp);
-
-            MatchTrades(tempData);
-            CleanupOpenTrades();
-            SaveData();
-            UpdateTradesGUI();
-        }
-
-        private static void MatchTrades (TradeData sellTrade) {
-            if (buyTrades == null || buyTrades.Count == 0) return;
-
-            for (int i = buyTrades.Count-1; i >= 0; i--) {
-                if (buyTrades[i].pair == sellTrade.pair) {
-                    matches.Add(new TradeMatch(buyTrades[i], sellTrade));
-                    buyTrades.RemoveAt(i);
-                    break;
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    DoneTrades.Add(new TradeData(Trades[i], amountQuote, price, timestamp));
+                    Trades.RemoveAt(i);
+                    UpdateTradesGUI();
+                    SaveData();
+                    return;
                 }
             }
         }
 
         private static void SaveData () {
-            if (buyTrades == null) return;
+            if (Trades == null) return;
 
             List<string> lines = new List<string>();
-            lines.Add(buyTrades.Count.ToString());
-            for (int i = 0; i < buyTrades.Count; i++) {
-                lines.AddRange(buyTrades[i].Serialize());
+            lines.Add(Trades.Count.ToString());
+            for (int i = 0; i < Trades.Count; i++) {
+                lines.AddRange(Trades[i].Serialize());
             }
 
             FileManager.SaveFile(DirectoryName + "/" + Filename, lines.ToArray());
@@ -145,7 +165,7 @@ namespace Utility {
             string[] lines = FileManager.ReadFile(DirectoryName + "/" + Filename);
             if(lines == null) return;
 
-            if (buyTrades == null) buyTrades = new List<TradeData>();
+            if (Trades == null) Trades = new List<TradeData>();
 
             int cnt = int.Parse(lines[0]);
             for (int i = 0; i < cnt; i++) {
@@ -156,7 +176,7 @@ namespace Utility {
                 }
 
                 TradeData td = TradeData.Parse(vars);
-                buyTrades.Add(td);
+                Trades.Add(td);
 
             }
 
@@ -164,20 +184,20 @@ namespace Utility {
         }
 
         private static void CleanupOpenTrades () {
-            if (buyTrades != null) buyTrades.RemoveAll(m => m.matched == true);
-            if (sellTrades != null) sellTrades.RemoveAll(m => m.matched == true);
+            if (Trades != null) while (Trades.Count > 12) Trades.RemoveAt(0);
         }
 
         private static void UpdateTradesGUI () {
-            PoloniexBot.Windows.GUIManager.tradeHistoryWindow.tradeHistoryScreen.UpdateTrades(buyTrades.ToArray(), sellTrades.ToArray(), matches.ToArray());
+            PoloniexBot.Windows.GUIManager.tradeHistoryWindow.tradeHistoryScreen.UpdateTrades(Trades.ToArray(), DoneTrades.ToArray());
         }
 
         public static bool GetOpenPosition (CurrencyPair pair, ref double value) {
-            if (buyTrades == null) return false;
+            if (Trades == null) return false;
 
-            for (int i = 0; i < buyTrades.Count; i++) {
-                if (buyTrades[i].pair == pair) {
-                    value = buyTrades[i].price;
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    if (Trades[i].sold) return false;
+                    value = Trades[i].buyPrice;
                     return true;
                 }
             }
@@ -185,11 +205,11 @@ namespace Utility {
             return false;
         }
         public static void UpdateOpenPosition (CurrencyPair pair, double price) {
-            if (buyTrades == null) return;
+            if (Trades == null) return;
 
-            for (int i = 0; i < buyTrades.Count; i++) {
-                if (buyTrades[i].pair == pair) {
-                    buyTrades[i] = new TradeData(buyTrades[i], price);
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    Trades[i] = new TradeData(Trades[i], price);
                     UpdateTradesGUI();
                     return;
                 }

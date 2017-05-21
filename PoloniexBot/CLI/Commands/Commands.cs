@@ -27,22 +27,6 @@ namespace PoloniexBot.CLI {
             throw new NotImplementedException();
         }
 
-        public static void Simulate (string[] parameters) {
-            string pairName = parameters[1].Replace('-', '_').Replace('/', '_').ToUpper();
-
-            if (pairName == "ALL") {
-                Utility.ThreadManager.Register(Simulation.SimulateAllConsecutively, "Simulator", false);
-            }
-            else {
-                PoloniexAPI.CurrencyPair pair = PoloniexAPI.CurrencyPair.Parse(pairName);
-                if (pair != null && Data.Store.CheckPairExists(pair)) {
-                    Manager.PrintNote("Running simulation on pair " + pair);
-                    Trading.Manager.GetTPManager(pair).InvokeThread(Trading.Manager.GetTPManager(pair).RunSimulation);
-                }
-                else throw new Exception("Pair " + pair + " does not exist");
-            }
-        }
-
         public static void Train (string[] parameters) {
             Utility.ThreadManager.Register(Training.Train, "Pattern-Matched Training", false);
         }

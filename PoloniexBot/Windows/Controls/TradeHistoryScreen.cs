@@ -19,26 +19,31 @@ namespace PoloniexBot.Windows.Controls {
 
         private static Object locker;
 
-        Utility.TradeTracker.TradeData[] buyTrades;
-        Utility.TradeTracker.TradeData[] sellTrades;
-        Utility.TradeTracker.TradeMatch[] matches;
+        Utility.TradeTracker.TradeData[] Trades;
+        Utility.TradeTracker.TradeData[] DoneTrades;
 
-        public void UpdateTrades (Utility.TradeTracker.TradeData[] buyTrades,
-            Utility.TradeTracker.TradeData[] sellTrades, Utility.TradeTracker.TradeMatch[] matches) {
+        public void UpdateTrades (Utility.TradeTracker.TradeData[] buyTrades, Utility.TradeTracker.TradeData[] doneTrades) {
             lock (locker) {
-                this.buyTrades = buyTrades;
-                this.sellTrades = sellTrades;
-                this.matches = matches;
+                this.Trades = buyTrades;
+                this.DoneTrades = doneTrades;
                 RecalculateCumulative();
             }
         }
 
         public void RecalculateCumulative () {
-            if (this.matches == null || this.matches.Length == 0) return;
+            
+            double cumulative = 0;
+            if (this.DoneTrades != null) {
+                for (int i = 0; i < DoneTrades.Length; i++) {
+                    if (i == 0) DoneTrades[0].cumulativeNetGainBtc = DoneTrades[0].netGainBtc;
+                    else DoneTrades[i].cumulativeNetGainBtc = DoneTrades[i - 1].cumulativeNetGainBtc + DoneTrades[i].netGainBtc;
+                    cumulative = DoneTrades[i].cumulativeNetGainBtc;
+                }
+            }
 
-            for (int i = 0; i < matches.Length; i++) {
-                if (i == 0) matches[i].cumulativeNetGainBtc = matches[i].netGainBtc;
-                else matches[i].cumulativeNetGainBtc = matches[i - 1].cumulativeNetGainBtc + matches[i].netGainBtc;
+            for (int i = 0; i < Trades.Length; i++) {
+                if (i == 0) Trades[i].cumulativeNetGainBtc = Trades[i].netGainBtc + cumulative;
+                else Trades[i].cumulativeNetGainBtc = Trades[i - 1].cumulativeNetGainBtc + Trades[i].netGainBtc;
             }
         }
 
@@ -78,36 +83,34 @@ namespace PoloniexBot.Windows.Controls {
                 int posXIndex = 0;
                 int posYStart = 41;
 
-                // first unmatched buy trades
-                if (buyTrades != null && buyTrades.Length > 0) {
-                    for (int i = buyTrades.Length - 1; i >= 0; i--) {
-                        if (buyTrades[i].matched) continue;
+                if (Trades != null && Trades.Length > 0) {
+                    for (int i = Trades.Length - 1; i >= 0; i--) {
 
                         int posX = (int)(rightBorder - ((TradeBoxWidth + 5) * (1 + posXIndex)));
 
                         if (posX + TradeBoxWidth > rightBorder) continue;
                         if (posX < leftBorder) break;
 
-                        DrawTrade(g, buyTrades[i], new Rectangle(posX, posYStart, TradeBoxWidth, 68), true);
-                        DrawOpenPosition(g, buyTrades[i], new Rectangle(posX, posYStart + 68 + 5, TradeBoxWidth, 48));
+                        DrawTrade(g, Trades[i], new Rectangle(posX, posYStart, TradeBoxWidth, 68), true);
+                        DrawOpenPosition(g, Trades[i], new Rectangle(posX, posYStart + 68 + 5, TradeBoxWidth, 48));
 
                         posXIndex++;
                     }
                 }
 
-                // now matched completed trades
-                if (matches != null && matches.Length > 0) {
-                    for (int i = matches.Length - 1; i >= 0; i--) {
+                if (DoneTrades != null && DoneTrades.Length > 0) {
+                    for (int i = DoneTrades.Length - 1; i >= 0; i--) {
 
                         int posX = (int)(rightBorder - ((TradeBoxWidth + 5) * (1 + posXIndex)));
 
                         if (posX + TradeBoxWidth > rightBorder) continue;
                         if (posX < leftBorder) break;
 
-                        DrawTrade(g, matches[i].buyTrade, new Rectangle(posX, posYStart, TradeBoxWidth, 68), true);
-                        DrawTrade(g, matches[i].sellTrade, new Rectangle(posX, posYStart + 68 + 5, TradeBoxWidth, 48), false);
-                        DrawNetTrade(g, matches[i], new Rectangle(posX, posYStart + 68 + 48 + 10, TradeBoxWidth, 36));
-                        DrawCumulativeNet(g, matches[i], new Rectangle(posX, posYStart + 68 + 48 + 36 + 15, TradeBoxWidth, 36));
+                        DrawTrade(g, DoneTrades[i], new Rectangle(posX, posYStart, TradeBoxWidth, 68), true);
+
+                        DrawTrade(g, DoneTrades[i], new Rectangle(posX, posYStart + 68 + 5, TradeBoxWidth, 48), false);
+                        DrawNetTrade(g, DoneTrades[i], new Rectangle(posX, posYStart + 68 + 48 + 10, TradeBoxWidth, 36));
+                        DrawCumulativeNet(g, DoneTrades[i], new Rectangle(posX, posYStart + 68 + 48 + 36 + 15, TradeBoxWidth, 36));
 
                         posXIndex++;
                     }
@@ -120,9 +123,9 @@ namespace PoloniexBot.Windows.Controls {
             }
         }
 
-        private void DrawCumulativeNet (Graphics g, Utility.TradeTracker.TradeMatch match, Rectangle rect) {
+        private void DrawCumulativeNet (Graphics g, Utility.TradeTracker.TradeData trade, Rectangle rect) {
             
-            bool isProfit = match.cumulativeNetGainBtc > 0;
+            bool isProfit = trade.cumulativeNetGainBtc > 0;
 
             // draw background
             g.FillRectangle(isProfit ? brushBuy : brushSell, rect);
@@ -146,7 +149,7 @@ namespace PoloniexBot.Windows.Controls {
             posY += fontSmall.Height;
 
             // draw net gain in BTC
-            double netGain = match.cumulativeNetGainBtc;
+            double netGain = trade.cumulativeNetGainBtc;
             string net = (netGain > 0 ? "+" : "") + netGain.ToString("F8") + " BTC";
 
             width = g.MeasureString(net, fontSmall).Width;
@@ -154,9 +157,9 @@ namespace PoloniexBot.Windows.Controls {
             g.DrawString(net, fontSmall, brushText, textPos, posY);
         }
 
-        private void DrawNetTrade (Graphics g, Utility.TradeTracker.TradeMatch match, Rectangle rect) {
+        private void DrawNetTrade (Graphics g, Utility.TradeTracker.TradeData trade, Rectangle rect) {
 
-            bool isProfit = match.percentGain > 0;
+            bool isProfit = trade.percentGain > 0;
 
             // draw background
             g.FillRectangle(isProfit ? brushBuy : brushSell, rect);
@@ -173,7 +176,7 @@ namespace PoloniexBot.Windows.Controls {
 
             // draw profit percent
             string percentNet = isProfit ? "Profit: +" : "Loss: ";
-            percentNet += match.percentGain.ToString("F4") + "%";
+            percentNet += trade.percentGain.ToString("F4") + "%";
 
             width = g.MeasureString(percentNet, fontSmall).Width;
             float textPos = rect.X + (rect.Width / 2f) - (width / 2f);
@@ -182,7 +185,7 @@ namespace PoloniexBot.Windows.Controls {
             posY += fontSmall.Height;
 
             // draw net gain in BTC
-            double netGain = match.netGainBtc;
+            double netGain = trade.netGainBtc;
             string net = (netGain > 0 ? "+" : "") + netGain.ToString("F8") + " BTC";
 
             width = g.MeasureString(net, fontSmall).Width;
@@ -214,7 +217,7 @@ namespace PoloniexBot.Windows.Controls {
             }
 
             // draw date + time
-            DateTime dt = Utility.DateTimeHelper.UnixTimestampToDateTime(trade.timestamp);
+            DateTime dt = Utility.DateTimeHelper.UnixTimestampToDateTime(isBuy ? trade.buyTimestamp : trade.sellTimestamp);
             string dateTime = dt.TimeOfDay.ToString() + " (" + dt.Day + "." + dt.Month + ")";
             width = g.MeasureString(dateTime, fontSmall).Width;
             g.DrawString(dateTime, fontSmall, brushText, rect.X - (width / 2f) + (rect.Width / 2f), rect.Y + posY);
@@ -222,14 +225,15 @@ namespace PoloniexBot.Windows.Controls {
             posY += fontSmall.Height;
 
             // draw price
-            string price = "Price: " + trade.price.ToString("F8");
+            double buyPrice = isBuy ? trade.buyPrice : trade.sellPrice;
+            string price = "Price: " + buyPrice.ToString("F8");
             width = g.MeasureString(price, fontSmall).Width;
             g.DrawString(price, fontSmall, brushText, rect.X - (width / 2f) + (rect.Width / 2f), rect.Y + posY);
 
             posY += fontSmall.Height;
 
             // draw amount in btc
-            double amountBtc = trade.amountQuote * trade.price;
+            double amountBtc = isBuy ? (trade.buyAmountQuote * trade.buyPrice) : (trade.sellAmountQuote * trade.sellPrice);
             string amount = amountBtc.ToString("F8") + " BTC";
             width = g.MeasureString(amount, fontSmall).Width;
             g.DrawString(amount, fontSmall, brushText, rect.X - (width / 2f) + (rect.Width / 2f), rect.Y + posY);
@@ -237,8 +241,8 @@ namespace PoloniexBot.Windows.Controls {
         }
         private void DrawOpenPosition (Graphics g, Utility.TradeTracker.TradeData trade, Rectangle rect) {
 
-            double change = ((trade.openPrice - trade.price) / trade.price);
-            double gain = trade.amountQuote * change * trade.openPrice;
+            double change = ((trade.openPrice - trade.buyPrice) / trade.buyPrice);
+            double gain = trade.buyAmountQuote * change * trade.openPrice;
             change *= 100;
             
             // draw background
@@ -263,14 +267,11 @@ namespace PoloniexBot.Windows.Controls {
             posY += fontSmall.Height;
 
             // draw change percent
-            string changeString = "Change: ";
-            width = g.MeasureString(changeString, fontSmall).Width;
-            g.DrawString(changeString, fontSmall, brushText, rect.X + 3, rect.Y + posY);
-
             using (Brush changeBrush = new SolidBrush(GetChangeColor(change))) {
-                changeString = change.ToString("F3") + "%";
+                string changeString = (change > 0 ? "+" : "") + change.ToString("F3") + "%";
                 width = g.MeasureString(changeString, fontSmall).Width;
-                g.DrawString(changeString, fontSmall, changeBrush, rect.X + 6 + width, rect.Y + posY);
+                float posX = (rect.Width / 2f) - (width / 2f) + 5;
+                g.DrawString(changeString, fontSmall, changeBrush, rect.X + posX, rect.Y + posY);
             }
 
             posY += fontSmall.Height;
@@ -283,14 +284,14 @@ namespace PoloniexBot.Windows.Controls {
 
         private Color GetChangeColor (double value) {
 
-            // +1.5% = 0,255,0
+            // +4% = 0,255,0
             // 0 = 255,255,255
-            // -1.5% = 255, 0, 0
+            // -4% = 255, 0, 0
 
             int r, g, b;
             r = g = b = 255;
 
-            value /= 1.5;
+            value /= 4;
             int offset = (int)(63 * value);
             offset = offset > 63 ? 63 : (offset < -63 ? -63 : offset);
 

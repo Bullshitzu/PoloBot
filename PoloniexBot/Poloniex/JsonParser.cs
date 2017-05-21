@@ -19,7 +19,8 @@ namespace PoloniexBot {
                 return returnData;
             }
             catch (Exception e) {
-                CLI.Manager.PrintError(e.Message);
+                Console.WriteLine("JSON Parser, line 22");
+                Console.WriteLine(e.Message);
                 return null;
             }
         }

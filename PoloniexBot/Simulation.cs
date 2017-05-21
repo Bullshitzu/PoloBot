@@ -27,20 +27,6 @@ namespace PoloniexBot {
         static double[] oldVars = { 0.0001071, 2, 0.02821, 1.75, 1, 1 };
         static double mutationAmount = 0.05; // 5% mutation
 
-        public static void SimulateAllConsecutively () {
-            
-            Simulation.ResetWallet();
-            Utility.TradeTracker.ClearAll();
-
-            Trading.TPManager[] managers = Trading.Manager.GetAllTPManagers();
-            if (managers == null || managers.Length == 0) throw new Exception("TP Manager list is empty");
-            CLI.Manager.PrintNote("Running simulation on all " + managers.Length + " pairs");
-            for (int i = 0; i < managers.Length; i++) {
-                managers[i].RunSimulation();
-            }
-            CLI.Manager.PrintNote("Done!");
-        }
-
         public static double CalculateSimulationScore (double adx, double volumeFactor, double meanRevScore) {
 
             adx = (geneticVars[0] * System.Math.Pow(adx, geneticVars[1])) - (geneticVars[2] * adx) + geneticVars[3];

@@ -48,7 +48,6 @@ namespace PoloniexBot.Trading {
                             for (int i = 0; i < tradePairs.Count; i++) {
                                 if (tradePairs[i].GetPair() == currPair) {
                                     tradePairs[i].InvokeThread(tradePairs[i].UpdatePredictors, null);
-                                    tradePairs[i].InvokeThread(tradePairs[i].RecalculateScore, null);
                                     tradePairs[i].InvokeThread(tradePairs[i].EvaluateAndTrade, null);
                                     UpdateWalletValue(currPair.QuoteCurrency);
                                     break;
@@ -93,8 +92,7 @@ namespace PoloniexBot.Trading {
             List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> marketData =
                 new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
 
-            marketData.Sort(new Utility.MarketDataComparer());
-            marketData.Reverse();
+            marketData.Sort(new Utility.MarketDataComparerPrice());
 
             if (tradePairs == null) tradePairs = new Utility.TSList<TPManager>();
             tradePairs.Clear();
@@ -104,6 +102,7 @@ namespace PoloniexBot.Trading {
             for (int i = 0; i < marketData.Count && tradePairs.Count < 10; i++) {
                 Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
                 AddPair(marketData[i].Key);
+                Utility.ThreadManager.ReportAlive();
             }
         }
         public static void RefreshTradePairsLocal () {

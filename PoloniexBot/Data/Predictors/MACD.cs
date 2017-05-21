@@ -10,7 +10,7 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class MACD : Predictor {
 
-        static int[] Settings = { 300, 1200, 60 };
+        static int[] Settings = { 1200, 4800, 60 };
 
         public MACD (CurrencyPair pair) : base(pair) { }
         public override void SignResult (ResultSet rs) {

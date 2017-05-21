@@ -53,7 +53,6 @@ namespace PoloniexBot.CLI {
 
             comms.Add(new Command("savetradedata", "Saves trade data to file", CommandImplementations.SaveTradeData));
             comms.Add(new Command("loadtradedata", "Loads trade data from file", CommandImplementations.LoadTradeData));
-            comms.Add(new Command("simulate", "...", new Parameter[] { new Parameter("pair") }, CommandImplementations.Simulate));
             comms.Add(new Command("train", "...", CommandImplementations.Train));
 
             commands = new Command[comms.Count];

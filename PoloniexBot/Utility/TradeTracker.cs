@@ -191,18 +191,29 @@ namespace Utility {
             PoloniexBot.Windows.GUIManager.tradeHistoryWindow.tradeHistoryScreen.UpdateTrades(Trades.ToArray(), DoneTrades.ToArray());
         }
 
-        public static bool GetOpenPosition (CurrencyPair pair, ref double value) {
-            if (Trades == null) return false;
+        public static double GetOpenPosition (CurrencyPair pair) {
+            if (Trades == null) return 0;
 
             for (int i = 0; i < Trades.Count; i++) {
                 if (Trades[i].pair == pair) {
-                    if (Trades[i].sold) return false;
-                    value = Trades[i].buyPrice;
-                    return true;
+                    if (Trades[i].sold) return 0;
+                    return Trades[i].buyPrice;
                 }
             }
 
-            return false;
+            return 0;
+        }
+        public static long GetOpenPositionBuyTime (CurrencyPair pair) {
+            if (Trades == null) return 0;
+
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    if (Trades[i].sold) return 0;
+                    return Trades[i].buyTimestamp;
+                }
+            }
+
+            return 0;
         }
         public static void UpdateOpenPosition (CurrencyPair pair, double price) {
             if (Trades == null) return;

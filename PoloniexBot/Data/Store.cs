@@ -148,7 +148,7 @@ namespace PoloniexBot {
                     startTime += 3600;
                     endTime += 3600;
 
-                    ThreadManager.ReportAlive();
+                    ThreadManager.ReportAlive("Data.Store");
                     if (startTime > currTime) break;
                     Thread.Sleep(250);
                 }

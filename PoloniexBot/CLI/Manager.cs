@@ -55,6 +55,9 @@ namespace PoloniexBot.CLI {
             comms.Add(new Command("loadtradedata", "Loads trade data from file", CommandImplementations.LoadTradeData));
             comms.Add(new Command("train", "...", CommandImplementations.Train));
 
+            comms.Add(new Command("forcebuy", "Forces a manual buy of the specified trade pair", new Parameter[] { new Parameter("currency") }, CommandImplementations.ForceBuy));
+            comms.Add(new Command("forcesell", "Forces a manual sell of the specified trade pair", new Parameter[] { new Parameter("currency") }, CommandImplementations.ForceSell));
+
             commands = new Command[comms.Count];
             for (int i = 0; i < comms.Count; i++) {
                 commands[i] = comms[i];

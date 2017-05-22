@@ -34,7 +34,7 @@ namespace Utility.Log {
                 ResolveNetLogs();
                 // note: others here
 
-                ThreadManager.ReportAlive();
+                ThreadManager.ReportAlive("Log.Manager");
                 Thread.Sleep(10);
             }
         }

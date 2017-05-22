@@ -4,38 +4,77 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PoloniexAPI;
+using PoloniexBot.Trading.Rules;
 
 namespace PoloniexBot.Trading.Strategies {
     class LowAlts : Strategy {
 
         public LowAlts (CurrencyPair pair) : base(pair) { }
 
-        // buy volatile alt coin
-        // if price drops by more then 15%, sell it
-        // do the maxiumum band thing with sales
-        // after N hours, sell it anyway and refresh tradepairs
+        // ------------------------------
 
-        private double minimumSellPrice = 0;
-        private double minimumSellPriceFactor = 1.0075; // +0.75% minimum profit
+        TradeRule ruleDelayAllTrades;
+        TradeRule ruleDelayBuy;
 
+        TradeRule ruleDump;
+
+        TradeRule ruleMinBase;
+        TradeRule ruleMinBasePost;
+        TradeRule ruleMinQuote;
+        TradeRule ruleMinQuotePost;
+
+        TradeRule ruleMinSellprice;
+        TradeRule ruleSellBand;
+        TradeRule ruleStopLoss;
+        TradeRule rulePriceDelta;
+
+        TradeRule[] allRules = { };
+
+        // ------------------------------
+
+        private double openPosition = 0;
         private double maximumPrice = 0;
 
-        private double macdBuyTrigger = 0.4;
-
-        private double buyCooldown = 1800;
-
-        private Data.Predictors.MACD predictorMacd;
+        private Data.Predictors.PriceDelta priceDeltaPredictor;
 
         public override void Setup () {
 
-            // Check file if this has been bought already
-            double openPos = 0;
-            Utility.TradeTracker.GetOpenPosition(pair, ref openPos);
-            minimumSellPrice = openPos * minimumSellPriceFactor;
+            // ----------------------------------
 
+            ruleDelayAllTrades = new RuleDelayAllTrade();
+            ruleDelayBuy = new RuleDelayBuy();
+
+            ruleDump = new RuleDump();
+            ruleForce = new RuleManualForce();
+
+            ruleMinBase = new RuleMinimumBaseAmount();
+            ruleMinBasePost = new RuleMinimumBaseAmountPost();
+            ruleMinQuote = new RuleMinimumQuoteAmount();
+            ruleMinQuotePost = new RuleMinimumQuoteAmountPost();
+
+            ruleMinSellprice = new RuleMinimumSellPrice();
+            ruleSellBand = new RuleSellBand();
+            ruleStopLoss = new RuleStopLoss();
+            rulePriceDelta = new RulePriceDelta();
+
+            // order doesn't matter
+            allRules = new TradeRule[] { 
+                ruleDelayAllTrades, ruleDelayBuy, // time delay
+                ruleDump, ruleForce, // manual utility
+                ruleMinBase, ruleMinBasePost, // minimum base amount
+                ruleMinQuote, ruleMinQuotePost, // minimum quote amount
+                ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
+                rulePriceDelta }; // buy rules
+
+            // ----------------------------------
+
+            // Check file if this has been bought already
+            double openPos = Utility.TradeTracker.GetOpenPosition(pair);
+            LastBuyTime = Utility.TradeTracker.GetOpenPositionBuyTime(pair);
+            openPosition = openPos;
             maximumPrice = openPos;
 
-            predictorMacd = new Data.Predictors.MACD(pair);
+            priceDeltaPredictor = new Data.Predictors.PriceDelta(pair);
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
@@ -44,10 +83,10 @@ namespace PoloniexBot.Trading.Strategies {
 
             for (int i = 0; i < tickers.Length; i++) {
                 tickerList.Add(tickers[i]);
-                
-                predictorMacd.Recalculate(tickerList.ToArray());
 
-                if (i % 100 == 0) Utility.ThreadManager.ReportAlive();
+                priceDeltaPredictor.Recalculate(tickerList.ToArray());
+
+                if (i % 100 == 0) Utility.ThreadManager.ReportAlive("LowAlts");
             }
         }
         public override void UpdatePredictors () {
@@ -60,7 +99,7 @@ namespace PoloniexBot.Trading.Strategies {
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Data store returned NULL tickers for pair " + pair);
 
-            predictorMacd.Recalculate(tickers);
+            priceDeltaPredictor.Recalculate(tickers);
 
             if (buyPrice > maximumPrice) maximumPrice = buyPrice;
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
@@ -72,92 +111,183 @@ namespace PoloniexBot.Trading.Strategies {
             double buyPrice = lastTicker.MarketData.OrderTopBuy;
             double sellPrice = lastTicker.MarketData.OrderTopSell;
 
-            if (lastTicker.Timestamp - LastTradeTime < TradeTimeBlock) return;
-            // to create a minimum 30 second delay between individual trades
-            // prevents multiple buy orders
+            double currQuoteAmount = Manager.GetWalletState(pair.QuoteCurrency);
+            double currBaseAmount = Manager.GetWalletState(pair.BaseCurrency);
 
-            if (lastTicker.Timestamp - lastSellTime < buyCooldown) return;
-            // to create a minimum 30 minute delay from sale to new buy
+            double currTradableBaseAmount = currBaseAmount * 0.3; // VolatilityScore;
+
+            double postBaseAmount = currQuoteAmount * buyPrice;
+            double postQuoteAmount = currTradableBaseAmount / sellPrice;
+
+            double deltaShort = 0;
 
             Data.ResultSet.Variable tempVar;
-            double macd = 0;
+            if (priceDeltaPredictor.GetLastResult().variables.TryGetValue("delta0", out tempVar)) deltaShort = tempVar.value;
 
-            Data.ResultSet RSMacd = predictorMacd.GetLastResult();
+            // Console.WriteLine(pair+": "+currTradableBaseAmount.ToString("F8"));
+            // Console.WriteLine("Pair: " + pair + ", D0: " + deltaShort.ToString("F8") + ", D1: " + deltaMid.ToString("F8")+", D2: "+deltaLong.ToString("F8"));
 
-            if (RSMacd.variables.TryGetValue("macdHistogramAdjusted", out tempVar)) macd = tempVar.value;
+            // -------------------------------
+            // Update the trade history screen
+            // -------------------------------
 
-            double currQuoteAmount = Manager.GetWalletState(pair.QuoteCurrency);
-            double currQuoteTotal = Manager.GetWalletState(pair.QuoteCurrency) + Manager.GetWalletStateOrders(pair.QuoteCurrency);
+            // todo: update trade history
 
-            // -----------------------------------------------
+            // -------------------------------------------
+            // Compile all the rule variables into a dictionary
+            // -------------------------------------------
 
-            // SELL
-            if (currQuoteAmount >= minTradeAmount) {
-                double sellBandSize = ((maximumPrice - minimumSellPrice) / minimumSellPrice) * 100;
-                double priceBandFactor = ((buyPrice - minimumSellPrice) / minimumSellPrice) * 100;
-                if (sellBandSize < 0 || priceBandFactor < 0) return;
+            Dictionary<string, double> ruleVariables = new Dictionary<string, double>();
 
-                if (sellBandSize > 17) sellBandSize = 17; // to lock a minimum of 2% band size on high values
+            ruleVariables.Add("lastBuyTimestamp", LastBuyTime);
+            ruleVariables.Add("lastSellTimestamp", LastSellTime);
+            ruleVariables.Add("lastTickerTimestamp", lastTicker.Timestamp);
 
-                double sellPriceTrigger = (0.04074 * Math.Pow(sellBandSize, 2)) + (0.263 * sellBandSize) - 1.454;
-                // 0.04074x^2 + 0.2630x − 1.454
-                // that's taking into account the minimumSellPriceFactor
-                // It's actually -1, 1, 6
-                // -5		-1.75
-                // 4		0.25
-                // 10		5.25
+            ruleVariables.Add("price", lastPrice);
+            ruleVariables.Add("buyPrice", buyPrice);
+            ruleVariables.Add("sellPrice", sellPrice);
 
-                if (buyPrice >= minimumSellPrice && priceBandFactor <= sellPriceTrigger) {
-                    double baseAmount = currQuoteAmount * buyPrice;
-                    if (baseAmount >= minTradeAmount) {
-                        // -----------------------------
-                        Console.WriteLine("Attempting Sell - " + pair);
-                        Console.WriteLine("Price: " + buyPrice.ToString("F8") + ", Amount: " + currQuoteAmount.ToString("F8"));
-                        // -----------------------------
-                        Task<ulong> postOrderTask = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Sell, buyPrice, currQuoteAmount);
-                        ulong id = postOrderTask.Result;
+            ruleVariables.Add("openPrice", openPosition);
+            ruleVariables.Add("maximumPrice", maximumPrice);
 
-                        if (id == 0) {
-                            Console.WriteLine("Error making sale");
-                        }
-                        else {
-                            Utility.TradeTracker.ReportSell(pair, currQuoteAmount, buyPrice);
+            ruleVariables.Add("quoteAmount", currQuoteAmount);
+            ruleVariables.Add("baseAmount", currBaseAmount);
 
-                            lastTradeTime = lastTicker.Timestamp;
-                            lastSellTime = lastTicker.Timestamp;
+            ruleVariables.Add("baseAmountTradable", currTradableBaseAmount);
+
+            ruleVariables.Add("postQuoteAmount", postQuoteAmount);
+            ruleVariables.Add("postBaseAmount", postBaseAmount);
+
+            ruleVariables.Add("deltaShort", deltaShort);
+
+            // -----------------------
+            // Recalculate all the rules
+            // -----------------------
+
+            try {
+                for (int i = 0; i < allRules.Length; i++) {
+                    allRules[i].Recalculate(ruleVariables);
+                }
+            }
+            catch (Exception e) {
+                Console.WriteLine("Error: " + e.Message);
+                return;
+            }
+
+            // ----------------
+            // Custom rule logic
+            // ----------------
+
+            #region Buy Logic Tree
+            if (ruleMinBase.Result != RuleResult.BlockBuy && ruleMinQuotePost.Result != RuleResult.BlockBuy) {
+                // we have enough of base and will have enough of quote (after trade) to satisfy minimum trade amount (0.0001)
+                // note: this counts the volatility factor, RuleMinimumBaseAmount uses baseAmount * volatility in verification
+
+                if (ruleForce.Result == RuleResult.Buy) {
+                    Buy(sellPrice, postQuoteAmount);
+                    return;
+                }
+
+                if (ruleDelayAllTrades.Result != RuleResult.BlockBuySell && ruleDelayBuy.Result != RuleResult.BlockBuy) {
+                    // enough time has passed since the last trades were made
+
+                    if (ruleMinQuote.Result == RuleResult.BlockSell) {
+                        // if it's blocking sell that means we don't own quote, so go ahead with buying
+
+                        if (rulePriceDelta.Result == RuleResult.Buy) {
+                            // MACD says it's time to buy
+
+                            Buy(sellPrice, postQuoteAmount);
+                            return;
                         }
                     }
                 }
             }
-            // BUY
-            else if (minimumSellPrice == 0 && macd > macdBuyTrigger) {
-                if (currQuoteTotal < minTradeAmount && currQuoteAmount < minTradeAmount) {
-                    double baseAmount = Manager.GetWalletState(pair.BaseCurrency) * VolatilityScore; // dont want to use it all on one pair
-                    if (baseAmount >= minTradeAmount) {
-                        double quoteAmount2 = baseAmount / sellPrice;
-                        if (quoteAmount2 >= minTradeAmount) { // buy quote currency
-                            // -----------------------------
-                            Console.WriteLine("Attempting Buy - " + pair);
-                            Console.WriteLine("Price: " + sellPrice.ToString("F8") + ", Amount: " + quoteAmount2.ToString("F8"));
-                            // -----------------------------
-                            Task<ulong> postOrderTask = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Buy, sellPrice, quoteAmount2);
-                            ulong id = postOrderTask.Result;
+            #endregion
 
-                            if (id == 0) {
-                                Console.WriteLine("Error making buy");
-                            }
-                            else {
-                                Utility.TradeTracker.ReportBuy(pair, quoteAmount2, sellPrice);
+            #region Sell Logic Tree
+            if (ruleMinQuote.Result != RuleResult.BlockSell && ruleMinBasePost.Result != RuleResult.BlockSell) {
+                // we have enough of quote and will have enough of base (after trade) to satisfy minimum trade amount (0.0001)
 
-                                lastTradeTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - 20;
-                                minimumSellPrice = sellPrice * minimumSellPriceFactor;
-                                maximumPrice = sellPrice;
-                            }
-                        }
+                if (ruleForce.Result == RuleResult.Sell) {
+                    Sell(buyPrice, currQuoteAmount);
+                    return;
+                }
+
+                if (ruleDelayAllTrades.Result != RuleResult.BlockBuySell) {
+                    // enough time has passed since the last trades were made
+
+                    if (ruleMinSellprice.Result != RuleResult.BlockSell && ruleDump.Result == RuleResult.Sell) {
+                        // current price is profitable and pair is in dump mode
+                        Sell(buyPrice, currQuoteAmount);
+                        return;
+                    }
+
+                    if (ruleMinSellprice.Result != RuleResult.BlockSell && ruleSellBand.Result == RuleResult.Sell) {
+                        // current price is profitable and is below the sell band
+                        Sell(buyPrice, currQuoteAmount);
+                        return;
+                    }
+
+                    if (ruleStopLoss.Result == RuleResult.Sell) {
+                        // the price has dropped 10% since buying
+                        // sell to prevent further losses
+                        Sell(buyPrice, currQuoteAmount);
+                        return;
                     }
                 }
             }
+            #endregion
+        }
 
+        private void Buy (double sellPrice, double quoteAmount) {
+
+            // -----------------------------
+            Console.WriteLine("Attempting Buy - " + pair);
+            Console.WriteLine("Price: " + sellPrice.ToString("F8") + ", Amount: " + quoteAmount.ToString("F8"));
+            // -----------------------------
+
+            Task<ulong> postOrderTask = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Buy, sellPrice, quoteAmount);
+            ulong id = postOrderTask.Result;
+
+            if (id == 0) {
+                Console.WriteLine("Error making buy");
+            }
+            else {
+                Utility.TradeTracker.ReportBuy(pair, quoteAmount, sellPrice);
+
+                LastBuyTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+
+                openPosition = sellPrice;
+                maximumPrice = sellPrice;
+
+                ruleForce.currentResult = RuleResult.None;
+            }
+        }
+
+        private void Sell (double buyPrice, double quoteAmount) {
+
+            // -----------------------------
+            Console.WriteLine("Attempting Sell - " + pair);
+            Console.WriteLine("Price: " + buyPrice.ToString("F8") + ", Amount: " + quoteAmount.ToString("F8"));
+            // -----------------------------
+
+            Task<ulong> postOrderTask = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Sell, buyPrice, quoteAmount);
+            ulong id = postOrderTask.Result;
+
+            if (id == 0) {
+                Console.WriteLine("Error making sale");
+            }
+            else {
+                Utility.TradeTracker.ReportSell(pair, quoteAmount, buyPrice);
+                
+                LastSellTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+
+                openPosition = 0;
+                maximumPrice = 0;
+
+                ruleForce.currentResult = RuleResult.None;
+            }
         }
     }
 }

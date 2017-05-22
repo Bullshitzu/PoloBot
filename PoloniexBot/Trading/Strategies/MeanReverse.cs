@@ -24,8 +24,8 @@ namespace PoloniexBot.Trading.Strategies {
 
         public override void Setup () {
 
-            double openPos = 0;
-            Utility.TradeTracker.GetOpenPosition(pair, ref openPos);
+            double openPos = Utility.TradeTracker.GetOpenPosition(pair);
+            LastBuyTime = Utility.TradeTracker.GetOpenPositionBuyTime(pair);
             minimumSellPrice = openPos * minimumSellPriceFactor;
 
             predictorMeanRev = new Data.Predictors.MeanReversion(pair);
@@ -43,7 +43,7 @@ namespace PoloniexBot.Trading.Strategies {
                 predictorADX.Recalculate(tickerList.ToArray());
                 predictorMeanRev.Recalculate(tickerList.ToArray());
 
-                if (i % 100 == 0) Utility.ThreadManager.ReportAlive();
+                if (i % 100 == 0) Utility.ThreadManager.ReportAlive("MeanReverse");
             }
         }
         public override void UpdatePredictors () {
@@ -77,7 +77,7 @@ namespace PoloniexBot.Trading.Strategies {
             double buyPrice = lastTicker.MarketData.OrderTopBuy;
             double sellPrice = lastTicker.MarketData.OrderTopSell;
 
-            if (lastTicker.Timestamp - LastTradeTime < TradeTimeBlock) return;
+            if (lastTicker.Timestamp - LastBuyTime < TradeTimeBlock) return;
             // to create a minimum 30 second delay between individual trades
             // prevents multiple buy orders
 
@@ -108,8 +108,8 @@ namespace PoloniexBot.Trading.Strategies {
                         else {
                             Utility.TradeTracker.ReportSell(pair, currQuoteAmount, buyPrice);
 
-                            lastTradeTime = lastTicker.Timestamp;
-                            lastSellTime = lastTicker.Timestamp;
+                            LastBuyTime = lastTicker.Timestamp;
+                            LastSellTime = lastTicker.Timestamp;
                             minimumSellPrice = 0;
                         }
                     }
@@ -134,7 +134,7 @@ namespace PoloniexBot.Trading.Strategies {
                             else {
                                 Utility.TradeTracker.ReportBuy(pair, quoteAmount2, sellPrice);
 
-                                lastTradeTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - 20;
+                                LastBuyTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - 20;
                                 minimumSellPrice = sellPrice * minimumSellPriceFactor;
                                 maximumPrice = sellPrice;
                             }

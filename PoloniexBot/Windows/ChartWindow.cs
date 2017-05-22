@@ -32,7 +32,7 @@ namespace PoloniexBot.Windows {
             while (true) {
                 UpdateChart(selectedPair);
 
-                Utility.ThreadManager.ReportAlive();
+                Utility.ThreadManager.ReportAlive("ChartWindow");
                 Thread.Sleep(3000);
             }
         }

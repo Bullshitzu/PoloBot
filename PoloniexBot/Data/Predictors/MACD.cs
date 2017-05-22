@@ -10,9 +10,16 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class MACD : Predictor {
 
-        static int[] Settings = { 1200, 4800, 60 };
+        public int[] Settings; // = { 150, 900, 60 };
 
-        public MACD (CurrencyPair pair) : base(pair) { }
+        public MACD (CurrencyPair pair)
+            : base(pair) {
+            Settings = new int[] { 150, 900, 60 };
+        }
+        public MACD (CurrencyPair pair, int shortEma, int longEma)
+            : base(pair) {
+                Settings = new int[] { shortEma, longEma, 60 };
+        }
         public override void SignResult (ResultSet rs) {
             rs.signature = "M.A.C.D.";
         }

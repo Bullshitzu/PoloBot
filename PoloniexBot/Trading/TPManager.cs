@@ -90,7 +90,7 @@ namespace PoloniexBot.Trading {
             else priceDiff = 1;
 
             double volatilityScore = currencyUse * priceDiff * 10;
-            if (volatilityScore < 0) volatilityScore = 0;
+            if (volatilityScore < 0.1) volatilityScore = 0.1;
             if (volatilityScore > 0.3) volatilityScore = 0.3;
 
             strategy.SetVolatility(volatilityScore);
@@ -105,6 +105,12 @@ namespace PoloniexBot.Trading {
 
         public CurrencyPair GetPair () {
             return pair;
+        }
+        public void ForceBuy () {
+            strategy.ForceBuy();
+        }
+        public void ForceSell () {
+            strategy.ForceSell();
         }
 
         private void Run () {
@@ -126,7 +132,7 @@ namespace PoloniexBot.Trading {
                         }
                         #endregion
 
-                        Utility.ThreadManager.ReportAlive();
+                        Utility.ThreadManager.ReportAlive("TPManager ("+pair+")");
                         Thread.Sleep(250);
                     }
                 }

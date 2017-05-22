@@ -93,15 +93,6 @@ namespace Utility {
                 Console.WriteLine("Cannot report thread " + name + " - not registered!");
             }
         }
-        public static void ReportAlive () {
-            ThreadData td;
-            if (Threads.TryGetValue(Thread.CurrentThread, out td)) {
-                td.lastReportTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-            }
-            else {
-                Console.WriteLine("Cannot report thread - not registered!");
-            }
-        }
 
         public static void Wait (Thread t) {
             if (t == null) return;

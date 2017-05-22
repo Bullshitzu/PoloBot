@@ -40,7 +40,11 @@ namespace PoloniexBot.Trading {
 
             while (true) {
                 if (updatedPairs != null) {
-                    while (updatedPairs.Count > 0) {
+
+                    int updatedCount = 0;
+                    while (updatedPairs.Count > 0 && updatedCount < 30) {
+                        updatedCount++;
+
                         CurrencyPair currPair = updatedPairs[0];
                         updatedPairs.RemoveAll(item => item == currPair);
 
@@ -63,7 +67,7 @@ namespace PoloniexBot.Trading {
                     walletUpdateCounter = 300;
                 }
 
-                Utility.ThreadManager.ReportAlive();
+                Utility.ThreadManager.ReportAlive("Trading.Manager");
                 Thread.Sleep(10);
             }
         }
@@ -89,20 +93,31 @@ namespace PoloniexBot.Trading {
 
             ClearAllPairs();
 
+            // -------------
+
             List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> marketData =
                 new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
-
-            marketData.Sort(new Utility.MarketDataComparerPrice());
 
             if (tradePairs == null) tradePairs = new Utility.TSList<TPManager>();
             tradePairs.Clear();
 
-            Utility.ThreadManager.ReportAlive();
+            // -------------
 
-            for (int i = 0; i < marketData.Count && tradePairs.Count < 10; i++) {
+            marketData.Sort(new Utility.MarketDataComparerPrice());
+
+            for (int i = 0; i < marketData.Count && tradePairs.Count < 7; i++) {
                 Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
                 AddPair(marketData[i].Key);
-                Utility.ThreadManager.ReportAlive();
+                Utility.ThreadManager.ReportAlive("Trading.Manager");
+            }
+
+            marketData.Sort(new Utility.MarketDataComparerVolume());
+            marketData.Reverse();
+
+            for (int i = 0; i < 3; i++) {
+                Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
+                AddPair(marketData[i].Key);
+                Utility.ThreadManager.ReportAlive("Trading.Manager");
             }
         }
         public static void RefreshTradePairsLocal () {
@@ -114,7 +129,7 @@ namespace PoloniexBot.Trading {
             if (tradePairs == null) tradePairs = new Utility.TSList<TPManager>();
             tradePairs.Clear();
 
-            Utility.ThreadManager.ReportAlive();
+            Utility.ThreadManager.ReportAlive("Trading.Manager");
 
             Console.WriteLine("Refreshing locally");
             Console.WriteLine(newPairs.Length);
@@ -263,6 +278,30 @@ namespace PoloniexBot.Trading {
                 tradePairs[i].Dispose();
                 tradePairs.RemoveAt(i);
             }
+        }
+
+        public static bool ForceBuy (CurrencyPair pair) {
+            if (tradePairs == null) return false;
+
+            for (int i = 0; i < tradePairs.Count; i++) {
+                if (tradePairs[i].GetPair() == pair) {
+                    tradePairs[i].ForceBuy();
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static bool ForceSell (CurrencyPair pair) {
+            if (tradePairs == null) return false;
+
+            for (int i = 0; i < tradePairs.Count; i++) {
+                if (tradePairs[i].GetPair() == pair) {
+                    tradePairs[i].ForceSell();
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

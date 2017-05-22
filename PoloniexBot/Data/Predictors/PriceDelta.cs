@@ -13,7 +13,7 @@ namespace PoloniexBot.Data.Predictors {
             rs.signature = "Price Delta";
         }
 
-        static int[] IndexPeriods = { 1500, 1600 }; // tickers
+        static int[] IndexPeriods = { 150 }; // seconds
         // coresponds to roughly 10 min / 30 min on the most active pairs
 
         public void Recalculate (object dataSet) {
@@ -32,14 +32,19 @@ namespace PoloniexBot.Data.Predictors {
             SaveResult(rs);
         }
 
-        private double GetPriceDelta (TickerChangedEventArgs[] tickers, int indexDelta) {
+        private double GetPriceDelta (TickerChangedEventArgs[] tickers, int timeDelta) {
             if (tickers == null || tickers.Length == 0) return 0;
 
             double endPrice = tickers[tickers.Length - 1].MarketData.PriceLast;
             double startPrice = endPrice;
 
-            int startIndex = tickers.Length - 1 - indexDelta;
-            if (startIndex < 0) startIndex = 0;
+            long startTime = tickers[tickers.Length - 1].Timestamp - timeDelta;
+            int startIndex = tickers.Length - 1;
+
+            for (int i = tickers.Length-1; i > 0; i--) {
+                if (tickers[i].Timestamp < startTime) break;
+                startIndex = i;
+            }
 
             startPrice = tickers[startIndex].MarketData.PriceLast;
 

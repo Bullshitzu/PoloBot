@@ -64,7 +64,7 @@ namespace Utility {
                     }
                 }
 
-                ThreadManager.ReportAlive();
+                ThreadManager.ReportAlive("NetworkStatus");
                 Thread.Sleep(1000);
             }
         }

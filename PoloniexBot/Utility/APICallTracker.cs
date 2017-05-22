@@ -40,7 +40,7 @@ namespace Utility {
                 calls.RemoveAll(HasExpired);
                 callsPerSec = sum / 10f;
 
-                ThreadManager.ReportAlive();
+                ThreadManager.ReportAlive("APICallTracker");
                 Thread.Sleep(10);
             }
         }

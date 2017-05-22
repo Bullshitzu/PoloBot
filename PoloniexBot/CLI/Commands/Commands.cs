@@ -38,5 +38,22 @@ namespace PoloniexBot.CLI {
             Utility.ThreadManager.Register(Data.Store.LoadTradeData, "Trade Data Load", false);
         }
 
+        public static void ForceBuy (string[] parameters) {
+            if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
+
+            PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+            if (!Trading.Manager.ForceBuy(pair)) {
+                throw new Exception("Specified currency does not exist");
+            }
+        }
+        public static void ForceSell (string[] parameters) {
+            if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
+
+            PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+            if (!Trading.Manager.ForceSell(pair)) {
+                throw new Exception("Specified currency does not exist");
+            }
+        }
+
     }
 }

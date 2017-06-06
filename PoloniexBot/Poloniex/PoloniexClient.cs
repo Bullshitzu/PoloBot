@@ -26,8 +26,8 @@ namespace PoloniexAPI {
             Authenticator = new Authenticator(apiWebClient, publicApiKey, privateApiKey);
 
             Markets = new MarketsCustom(apiWebClient);
-            Trading = new TradingCustom(apiWebClient);
-            Wallet = new WalletCustom(apiWebClient);
+            Trading = new TradingSimulated(apiWebClient);
+            Wallet = new WalletSimulated(apiWebClient);
             Live = new LiveCustom();
         }
 

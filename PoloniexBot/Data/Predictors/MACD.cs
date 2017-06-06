@@ -14,7 +14,7 @@ namespace PoloniexBot.Data.Predictors {
 
         public MACD (CurrencyPair pair)
             : base(pair) {
-            Settings = new int[] { 150, 900, 60 };
+            Settings = new int[] { 300, 600, 60 }; // 5 min, 10 min
         }
         public MACD (CurrencyPair pair, int shortEma, int longEma)
             : base(pair) {
@@ -75,6 +75,18 @@ namespace PoloniexBot.Data.Predictors {
 
             prices.Reverse();
             return Analysis.MovingAverage.ExponentialMovingAverage(prices.ToArray());
+        }
+        private double GetSMA (TickerChangedEventArgs[] tickers, int time) {
+            long startTime = tickers.Last().Timestamp - time;
+
+            List<double> prices = new List<double>();
+            for (int i = tickers.Length - 1; i >= 0; i--) {
+                if (tickers[i].Timestamp < startTime) break;
+                prices.Add(tickers[i].MarketData.PriceLast);
+            }
+
+            prices.Reverse();
+            return Analysis.MovingAverage.SimpleMovingAverage(prices.ToArray());
         }
 
         // -------------------

@@ -5,22 +5,23 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
-    class RuleMACD : TradeRule {
+    class RuleMeanRev : TradeRule {
 
-        private const double MacdTrigger = 0.1;
+        private const double MeanRevBuyTrigger = 5; // price N% below 3hour mean
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double macd = 0;
+            double meanRev = 0;
 
-            if (!values.TryGetValue("macd", out macd)) throw new VariableNotIncludedException();
+            if (!values.TryGetValue("meanRev", out meanRev)) throw new VariableNotIncludedException();
 
-            if (macd > MacdTrigger) {
+            if (meanRev > MeanRevBuyTrigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }
 
             currentResult = RuleResult.None;
+
         }
     }
 }

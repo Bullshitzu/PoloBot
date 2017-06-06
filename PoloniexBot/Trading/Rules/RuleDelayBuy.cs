@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleDelayBuy : TradeRule {
 
-        private const long BuyCooldown = 180; // 3 minutes block after selling
+        private const long BuyCooldown = 600; // 10 minutes block after selling
 
         public override void Recalculate (Dictionary<string, double> values) {
             

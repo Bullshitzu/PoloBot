@@ -7,17 +7,26 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleStopLoss : TradeRule {
 
-        private const double StopLossTrigger = 0.90; // 10% drop = sell
+        private const double StopLossTrigger = 0.9; // 2.5% drop = sell
+        private const int TimeTrigger = 1800; // how long it takes for Trigger to go up by 0.1 (10%)
 
         public override void Recalculate (Dictionary<string, double> values) {
 
             double openPrice = 0;
             double currBuyPrice = 0;
 
+            double currTimestamp = 0;
+            double buyTimestamp = 0;
+
             if (!values.TryGetValue("buyPrice", out currBuyPrice)) throw new VariableNotIncludedException();
             if (!values.TryGetValue("openPrice", out openPrice)) throw new VariableNotIncludedException();
 
-            if (openPrice * StopLossTrigger > currBuyPrice) {
+            if (!values.TryGetValue("lastTickerTimestamp", out currTimestamp)) throw new VariableNotIncludedException();
+            if (!values.TryGetValue("lastBuyTimestamp", out buyTimestamp)) throw new VariableNotIncludedException();
+
+            double timeTriggerOffset = ((currTimestamp - buyTimestamp) / TimeTrigger) * 0.1;
+
+            if (openPrice * (StopLossTrigger + timeTriggerOffset) > currBuyPrice) {
                 currentResult = RuleResult.Sell;
                 return;
             }

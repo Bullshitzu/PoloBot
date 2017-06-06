@@ -31,6 +31,8 @@ namespace PoloniexAPI.MarketTools {
 
         public MarketData (double price) {
             this.PriceLast = price;
+            this.OrderTopBuy = price;
+            this.OrderTopSell = price;
         }
 
         public MarketData () { }

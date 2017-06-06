@@ -19,7 +19,7 @@ namespace PoloniexBot.Data.Predictors {
         // Setup Vars
         // -------------------
 
-        private const long MeanTimePeriod = 10800; // 3 hour
+        private const long MeanTimePeriod = 10800; // 3 hours
 
         // -------------------
 
@@ -29,12 +29,9 @@ namespace PoloniexBot.Data.Predictors {
             ResultSet rs = new ResultSet(tickers.Last().Timestamp);
 
             double meanPrice = CalculateMeanPrice(tickers, MeanTimePeriod);
-            double currPrice = tickers.Last().MarketData.PriceLast;
+            double currPrice = tickers.Last().MarketData.OrderTopBuy;
 
-            // 10% under = +1
-            // 10% over = -1
-
-            double ratio = ((meanPrice - currPrice) / meanPrice) * 50;
+            double ratio = ((meanPrice - currPrice) / meanPrice) * 100;
             if (double.IsNaN(ratio) || double.IsInfinity(ratio)) ratio = 0;
 
             rs.variables.Add("price", new ResultSet.Variable("Price", currPrice, 8));

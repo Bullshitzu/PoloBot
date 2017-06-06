@@ -18,25 +18,25 @@ namespace PoloniexBot.Trading.Rules {
 
             double minimumSellPrice = openPrice * RuleMinimumSellPrice.ProfitFactor;
 
-            double priceBandFactor = ((currBuyPrice - minimumSellPrice) / minimumSellPrice) * 100;
-            double sellBandSize = ((maximumPrice - minimumSellPrice) / minimumSellPrice) * 100;
+            double currPriceDeltaPercent = ((currBuyPrice - minimumSellPrice) / minimumSellPrice) * 100;
+            double maximumPriceDeltaPercent = ((maximumPrice - minimumSellPrice) / minimumSellPrice) * 100;
 
-            if (sellBandSize < 0 || priceBandFactor < 0) {
+            if (maximumPriceDeltaPercent < 0 || currPriceDeltaPercent < 0) {
                 currentResult = RuleResult.None;
                 return;
             }
 
-            if (sellBandSize > 17) sellBandSize = 17; // to lock a minimum of 2% band size on high values
+            double sellPriceTrigger = (0.03193 * Math.Pow(maximumPriceDeltaPercent, 2)) + (0.4210 * maximumPriceDeltaPercent) - 0.40336;
+            if (maximumPriceDeltaPercent > 10) sellPriceTrigger = maximumPriceDeltaPercent - 2.5;
 
-            double sellPriceTrigger = (0.04074 * Math.Pow(sellBandSize, 2)) + (0.263 * sellBandSize) - 1.454;
-            // 0.04074x^2 + 0.2630x − 1.454
-            // that's taking into account the minimumSellPriceFactor
-            // It's actually -1, 1, 6
-            // -5		-1.75
-            // 4		0.25
-            // 10		5.25
+            // if (maximumPriceDeltaPercent > 15) maximumPriceDeltaPercent = 15; // to lock a minimum of 1% band size on high values
+            // double sellPriceTrigger = 0.01071 * Math.Pow(maximumPriceDeltaPercent, 2) + 0.6857 * maximumPriceDeltaPercent - 0.1964;
+            // maximum is based on minimumSellPrice (+0.5%)
+            // 1        0.5
+            // 5        3.5
+            // 15      12.5
 
-            if (priceBandFactor <= sellPriceTrigger)
+            if (currPriceDeltaPercent <= sellPriceTrigger)
                 currentResult = RuleResult.Sell;
         }
     }

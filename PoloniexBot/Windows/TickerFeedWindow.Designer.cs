@@ -56,7 +56,8 @@ namespace PoloniexBot.Windows {
             // tickerFeed
             // 
             this.tickerFeed.BackColor = System.Drawing.Color.Transparent;
-            this.tickerFeed.Font = new System.Drawing.Font("Calibri Bold Caps", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.tickerFeed.Font = new System.Drawing.Font("Telegrama Render", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            // new System.Drawing.Font("Calibri Bold Caps", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.tickerFeed.ForeColor = System.Drawing.SystemColors.ButtonFace;
             this.tickerFeed.Location = new System.Drawing.Point(4, 4);
             this.tickerFeed.Name = "tickerFeed";
@@ -66,6 +67,7 @@ namespace PoloniexBot.Windows {
             // 
             // TickerFeedWindow
             // 
+            this.Font = new System.Drawing.Font("Telegrama Render", 12F, System.Drawing.FontStyle.Bold);
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;

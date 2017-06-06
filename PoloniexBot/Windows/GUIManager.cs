@@ -16,6 +16,7 @@ namespace PoloniexBot.Windows {
         public static ErrorWindow errorWindow;
         public static PerformanceWindow performanceWindow;
         public static TradeHistoryWindow tradeHistoryWindow;
+        public static StrategyWindow strategyWindow;
 
         static string positionFilepath = "settings/windowPositions.file";
         private static Dictionary<string, FormCustom> windows;
@@ -31,6 +32,7 @@ namespace PoloniexBot.Windows {
             errorWindow = new ErrorWindow();
             performanceWindow = new PerformanceWindow();
             tradeHistoryWindow = new TradeHistoryWindow();
+            strategyWindow = new StrategyWindow();
 
             windows.Add(consoleWindow.ID, consoleWindow);
             windows.Add(accountStatusWindow.ID, accountStatusWindow);
@@ -39,6 +41,7 @@ namespace PoloniexBot.Windows {
             windows.Add(errorWindow.ID, errorWindow);
             windows.Add(performanceWindow.ID, performanceWindow);
             windows.Add(tradeHistoryWindow.ID, tradeHistoryWindow);
+            windows.Add(strategyWindow.ID, strategyWindow);
 
             // to ensure the handle is generated
             var temp = errorWindow.Handle;
@@ -51,6 +54,7 @@ namespace PoloniexBot.Windows {
             tickerFeedWindow.tickerFeed.Start();
             performanceWindow.performanceScreen.Start();
             tradeHistoryWindow.tradeHistoryScreen.Start();
+            strategyWindow.strategyScreen.Start();
         }
 
         public static void ReloadAllGraphics () {

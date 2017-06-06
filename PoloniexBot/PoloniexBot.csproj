@@ -137,6 +137,7 @@
     <Compile Include="Data\PatternMatching.cs" />
     <Compile Include="Data\Predictor.cs" />
     <Compile Include="Data\Predictors\ADX.cs" />
+    <Compile Include="Data\Predictors\BollingerBands.cs" />
     <Compile Include="Data\Predictors\Ichimoku.cs" />
     <Compile Include="Data\Predictors\MACD.cs" />
     <Compile Include="Data\Predictors\MacdTrendBlocker.cs" />
@@ -153,19 +154,24 @@
     <Compile Include="Trading\DataStructures.cs" />
     <Compile Include="Trading\Manager.cs" />
     <Compile Include="Trading\Rules\Rule.cs" />
+    <Compile Include="Trading\Rules\RuleADX.cs" />
+    <Compile Include="Trading\Rules\RuleBollinger.cs" />
     <Compile Include="Trading\Rules\RuleDelayAllTrade.cs" />
     <Compile Include="Trading\Rules\RuleDelayBuy.cs" />
     <Compile Include="Trading\Rules\RuleDump.cs" />
     <Compile Include="Trading\Rules\RuleMACD.cs" />
     <Compile Include="Trading\Rules\RuleManualForce.cs" />
+    <Compile Include="Trading\Rules\RuleMeanRev.cs" />
     <Compile Include="Trading\Rules\RuleMinimumBaseAmount.cs" />
     <Compile Include="Trading\Rules\RuleMinimumBaseAmountPost.cs" />
     <Compile Include="Trading\Rules\RuleMinimumQuoteAmount.cs" />
     <Compile Include="Trading\Rules\RuleMinimumQuoteAmountPost.cs" />
     <Compile Include="Trading\Rules\RuleMinimumSellPrice.cs" />
     <Compile Include="Trading\Rules\RulePriceDelta.cs" />
+    <Compile Include="Trading\Rules\RulePriceTrend.cs" />
     <Compile Include="Trading\Rules\RuleSellBand.cs" />
     <Compile Include="Trading\Rules\RuleStopLoss.cs" />
+    <Compile Include="Trading\Strategies\Bollinger.cs" />
     <Compile Include="Trading\Strategies\LowAlts.cs" />
     <Compile Include="Trading\Strategies\MeanReverse.cs" />
     <Compile Include="Trading\Strategies\Strategy.cs" />
@@ -279,6 +285,12 @@
     <Compile Include="Windows\Controls\PredictorsScreen.Designer.cs">
       <DependentUpon>PredictorsScreen.cs</DependentUpon>
     </Compile>
+    <Compile Include="Windows\Controls\StrategyScreen.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Windows\Controls\StrategyScreen.Designer.cs">
+      <DependentUpon>StrategyScreen.cs</DependentUpon>
+    </Compile>
     <Compile Include="Windows\Controls\TradeHistoryScreen.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -355,6 +367,12 @@
     <Compile Include="Windows\AccountStatusWindow.Designer.cs">
       <DependentUpon>AccountStatusWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="Windows\StrategyWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\StrategyWindow.Designer.cs">
+      <DependentUpon>StrategyWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Windows\TickerFeedWindow.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -415,6 +433,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Windows\ConsoleWindow.resx">
       <DependentUpon>ConsoleWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\StrategyWindow.resx">
+      <DependentUpon>StrategyWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Windows\TickerFeedWindow.resx">
       <DependentUpon>TickerFeedWindow.cs</DependentUpon>

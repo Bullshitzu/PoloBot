@@ -5,21 +5,20 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
-    class RuleMACD : TradeRule {
-
-        private const double MacdTrigger = 0.1;
+    class RuleBollinger : TradeRule {
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double macd = 0;
+            double price = 0;
+            double lowBand = 0;
 
-            if (!values.TryGetValue("macd", out macd)) throw new VariableNotIncludedException();
+            if (!values.TryGetValue("buyPrice", out price)) throw new VariableNotIncludedException();
+            if (!values.TryGetValue("bollingerBandLow", out lowBand)) throw new VariableNotIncludedException();
 
-            if (macd > MacdTrigger) {
+            if (price < lowBand) {
                 currentResult = RuleResult.Buy;
                 return;
             }
-
             currentResult = RuleResult.None;
         }
     }

@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleDelayAllTrade : TradeRule {
 
-        private const long TradeTimeBlock = 30; // 30 second block after selling or buying
+        private const long TradeTimeBlock = 60; // 1 minutes block after selling or buying
+        // to allow the wallet to be refreshed and stuff
 
         public override void Recalculate (Dictionary<string, double> values) {
 

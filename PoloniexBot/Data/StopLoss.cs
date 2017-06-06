@@ -16,7 +16,7 @@ namespace PoloniexBot.Data {
 
         private bool enabled = false;
         double highestValue=0;
-        const float lossMargin = 0.97f; // 3% loss triggers sale
+        const float lossMargin = 0.98f; // 0.5% loss triggers sale
 
         public void SetPrice (double value) {
             highestValue = value;

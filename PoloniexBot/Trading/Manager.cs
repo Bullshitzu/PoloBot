@@ -103,18 +103,10 @@ namespace PoloniexBot.Trading {
 
             // -------------
 
-            marketData.Sort(new Utility.MarketDataComparerPrice());
-
-            for (int i = 0; i < marketData.Count && tradePairs.Count < 7; i++) {
-                Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
-                AddPair(marketData[i].Key);
-                Utility.ThreadManager.ReportAlive("Trading.Manager");
-            }
-
             marketData.Sort(new Utility.MarketDataComparerVolume());
             marketData.Reverse();
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < marketData.Count && tradePairs.Count < 12; i++) {
                 Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
                 AddPair(marketData[i].Key);
                 Utility.ThreadManager.ReportAlive("Trading.Manager");
@@ -230,7 +222,7 @@ namespace PoloniexBot.Trading {
             return PoloniexBot.ClientManager.client.Trading.GetOpenOrdersAsync(pair).Result;
         }
 
-        public static void AddPair (CurrencyPair pair) {
+        public static TPManager AddPair (CurrencyPair pair) {
             if (tradePairs == null) tradePairs = new Utility.TSList<TPManager>();
 
             TPManager tpMan = new TPManager(pair);
@@ -240,6 +232,8 @@ namespace PoloniexBot.Trading {
             tradePairs.Add(tpMan);
 
             Windows.GUIManager.tickerFeedWindow.tickerFeed.MarkPair(pair, true);
+
+            return tpMan;
         }
         public static void AddPairLocal (CurrencyPair pair) {
             // adds the pair without pulling any data, using only what's available from file
@@ -289,6 +283,9 @@ namespace PoloniexBot.Trading {
                     return true;
                 }
             }
+
+            AddPair(pair).ForceBuy();
+
             return false;
         }
         public static bool ForceSell (CurrencyPair pair) {

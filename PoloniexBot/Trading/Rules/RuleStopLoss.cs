@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleStopLoss : TradeRule {
 
-        private const double StopLossTrigger = 0.9; // 2.5% drop = sell
-        private const int TimeTrigger = 1800; // how long it takes for Trigger to go up by 0.1 (10%)
+        private const double StopLossTrigger = 0.85; // 15% drop = sell
+        private const int TimeTrigger = 7200; // how long it takes for Trigger to go up by 0.1 (10%)
 
         public override void Recalculate (Dictionary<string, double> values) {
 

@@ -46,8 +46,8 @@ namespace PoloniexBot {
             }
         }
 
-        private void btnSavePositions_Click (object sender, EventArgs e) {
-            Windows.GUIManager.SavePositions();
+        private void btnBringToFront_Click (object sender, EventArgs e) {
+            Windows.GUIManager.BringToFront();
         }
     }
 }

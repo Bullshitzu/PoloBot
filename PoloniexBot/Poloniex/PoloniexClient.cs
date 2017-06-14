@@ -20,15 +20,23 @@ namespace PoloniexAPI {
         /// <summary>Creates a new instance of Poloniex API .NET's client service.</summary>
         /// <param name="publicApiKey">Your public API key.</param>
         /// <param name="privateApiKey">Your private API key.</param>
-        public PoloniexClient (string publicApiKey, string privateApiKey) {
+        public PoloniexClient (string publicApiKey, string privateApiKey, bool simulated = false) {
             var apiWebClient = new ApiWebClient(Helper.ApiUrlHttpsBase);
 
             Authenticator = new Authenticator(apiWebClient, publicApiKey, privateApiKey);
 
-            Markets = new MarketsCustom(apiWebClient);
-            Trading = new TradingSimulated(apiWebClient);
-            Wallet = new WalletSimulated(apiWebClient);
-            Live = new LiveCustom();
+            if (simulated) {
+                Markets = new MarketsCustom(apiWebClient);
+                Trading = new TradingSimulated(apiWebClient);
+                Wallet = new WalletSimulated(apiWebClient);
+                Live = new LiveCustom();
+            }
+            else {
+                Markets = new MarketsCustom(apiWebClient);
+                Trading = new TradingCustom(apiWebClient);
+                Wallet = new WalletCustom(apiWebClient);
+                Live = new LiveCustom();
+            }
         }
 
         /// <summary>Creates a new, unauthorized instance of Poloniex API .NET's client service.</summary>

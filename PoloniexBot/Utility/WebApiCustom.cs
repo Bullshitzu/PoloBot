@@ -21,6 +21,8 @@ namespace Utility {
                 HttpWebRequest request = WebRequest.CreateHttp(builder.Uri);
 
                 request.ContentType = "application/x-www-form-urlencoded";
+                request.KeepAlive = false;
+                request.ProtocolVersion = HttpVersion.Version10;
 
                 reader = new StreamReader(request.GetResponse().GetResponseStream());
                 string s = reader.ReadToEnd();

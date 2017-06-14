@@ -14,7 +14,7 @@ namespace PoloniexBot.Data.Predictors {
 
         public MACD (CurrencyPair pair)
             : base(pair) {
-            Settings = new int[] { 300, 600, 60 }; // 5 min, 10 min
+            Settings = new int[] { 1500, 1800, 60 }; // 5 min, 10 min
         }
         public MACD (CurrencyPair pair, int shortEma, int longEma)
             : base(pair) {

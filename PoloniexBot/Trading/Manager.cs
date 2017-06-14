@@ -38,6 +38,8 @@ namespace PoloniexBot.Trading {
             UpdateWallet();
             int walletUpdateCounter = 300;
 
+            ReportWampAlive();
+
             while (true) {
                 if (updatedPairs != null) {
 
@@ -61,6 +63,8 @@ namespace PoloniexBot.Trading {
                     }
                 }
 
+                CheckWampAlive();
+
                 walletUpdateCounter--;
                 if (walletUpdateCounter <= 0) {
                     UpdateWallet();
@@ -69,6 +73,17 @@ namespace PoloniexBot.Trading {
 
                 Utility.ThreadManager.ReportAlive("Trading.Manager");
                 Thread.Sleep(10);
+            }
+        }
+
+        private static long wampReportTimestamp = 0;
+        public static void ReportWampAlive () {
+            wampReportTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+        }
+        private static void CheckWampAlive () {
+            long currTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+            if (currTimestamp - wampReportTimestamp > 120) {
+                Utility.NetworkStatus.BootDown();
             }
         }
 
@@ -93,10 +108,14 @@ namespace PoloniexBot.Trading {
 
             ClearAllPairs();
 
+            Windows.GUIManager.strategyWindow.strategyScreen.ClearData();
+
             // -------------
 
             List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> marketData =
                 new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
+
+            Thread.Sleep(1000);
 
             if (tradePairs == null) tradePairs = new Utility.TSList<TPManager>();
             tradePairs.Clear();
@@ -107,9 +126,20 @@ namespace PoloniexBot.Trading {
             marketData.Reverse();
 
             for (int i = 0; i < marketData.Count && tradePairs.Count < 12; i++) {
-                Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
-                AddPair(marketData[i].Key);
-                Utility.ThreadManager.ReportAlive("Trading.Manager");
+                while (true) {
+                    try {
+                        Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
+                        AddPair(marketData[i].Key);
+                        
+                        break;
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                        Thread.Sleep(1000);
+                    }
+
+                    Utility.ThreadManager.ReportAlive("Trading.Manager");
+                }
             }
         }
         public static void RefreshTradePairsLocal () {

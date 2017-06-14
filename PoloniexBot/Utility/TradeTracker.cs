@@ -151,8 +151,6 @@ namespace Utility {
         }
 
         private static void SaveData () {
-            return;
-
             if (Trades == null) return;
 
             List<string> lines = new List<string>();
@@ -164,8 +162,6 @@ namespace Utility {
             FileManager.SaveFile(DirectoryName + "/" + Filename, lines.ToArray());
         }
         public static void LoadData () {
-            return;
-
             string[] lines = FileManager.ReadFile(DirectoryName + "/" + Filename);
             if(lines == null) return;
 

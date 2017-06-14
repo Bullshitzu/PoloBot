@@ -25,8 +25,8 @@ namespace PoloniexBot.Trading.Strategies {
         TradeRule ruleSellBand;
         TradeRule ruleStopLoss;
 
-        TradeRule ruleMacd;
-        TradeRule ruleMeanRev;
+        TradeRule ruleTrendUp;
+        TradeRule ruleReverse;
 
         TradeRule[] allRules = { };
 
@@ -35,8 +35,8 @@ namespace PoloniexBot.Trading.Strategies {
         private double openPosition = 0;
         private double maximumPrice = 0;
 
-        private Data.Predictors.MACD predictorMacd;
         private Data.Predictors.MeanReversion predictorMeanRev;
+        private Data.Predictors.BollingerBands predictorBollinger;
 
         public override void Setup () {
 
@@ -56,8 +56,8 @@ namespace PoloniexBot.Trading.Strategies {
             ruleSellBand = new RuleSellBand();
             ruleStopLoss = new RuleStopLoss();
 
-            ruleMacd = new RuleMACD();
-            ruleMeanRev = new RuleMeanRev();
+            ruleTrendUp = new Rules.Temp.RuleTrendUp();
+            ruleReverse = new Rules.Temp.RuleReverse();
 
             // order doesn't matter
             allRules = new TradeRule[] { 
@@ -66,7 +66,7 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinBase, ruleMinBasePost, // minimum base amount
                 ruleMinQuote, ruleMinQuotePost, // minimum quote amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
-                ruleMacd, ruleMeanRev }; // buy rules
+                ruleTrendUp, ruleReverse }; // buy rules
 
             // ----------------------------------
 
@@ -76,8 +76,8 @@ namespace PoloniexBot.Trading.Strategies {
             openPosition = openPos;
             maximumPrice = openPos;
 
-            predictorMacd = new Data.Predictors.MACD(pair);
             predictorMeanRev = new Data.Predictors.MeanReversion(pair);
+            predictorBollinger = new Data.Predictors.BollingerBands(pair);
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
@@ -87,8 +87,8 @@ namespace PoloniexBot.Trading.Strategies {
             for (int i = 0; i < tickers.Length; i++) {
                 tickerList.Add(tickers[i]);
 
-                predictorMacd.Recalculate(tickerList.ToArray());
                 predictorMeanRev.Recalculate(tickerList.ToArray());
+                predictorBollinger.Recalculate(tickerList.ToArray());
 
                 if (i % 100 == 0) Utility.ThreadManager.ReportAlive("LowAlts");
             }
@@ -103,8 +103,8 @@ namespace PoloniexBot.Trading.Strategies {
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Data store returned NULL tickers for pair " + pair);
 
-            predictorMacd.Recalculate(tickers);
             predictorMeanRev.Recalculate(tickers);
+            predictorBollinger.Recalculate(tickers);
 
             if (buyPrice > maximumPrice) maximumPrice = buyPrice;
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
@@ -124,12 +124,14 @@ namespace PoloniexBot.Trading.Strategies {
             double postBaseAmount = currQuoteAmount * buyPrice;
             double postQuoteAmount = currTradableBaseAmount / sellPrice;
 
-            double macd = 0;
             double meanRev = 0;
+            double bollingerBandDelta = 0;
+            double bollingerBandLower = 0;
 
             Data.ResultSet.Variable tempVar;
-            if (predictorMacd.GetLastResult().variables.TryGetValue("macdHistogramAdjusted", out tempVar)) macd = tempVar.value;
             if (predictorMeanRev.GetLastResult().variables.TryGetValue("score", out tempVar)) meanRev = tempVar.value;
+            if (predictorBollinger.GetLastResult().variables.TryGetValue("bandSizeDelta", out tempVar)) bollingerBandDelta = tempVar.value;
+            if (predictorBollinger.GetLastResult().variables.TryGetValue("lowerBand", out tempVar)) bollingerBandLower = tempVar.value;
 
             // -------------------------------
             // Update the trade history screen
@@ -162,8 +164,9 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("postQuoteAmount", postQuoteAmount);
             ruleVariables.Add("postBaseAmount", postBaseAmount);
 
-            ruleVariables.Add("macd", macd);
             ruleVariables.Add("meanRev", meanRev);
+            ruleVariables.Add("bollingerBandDelta", bollingerBandDelta);
+            ruleVariables.Add("bollingerBandLower", bollingerBandLower);
 
             PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, ruleVariables);
 
@@ -201,7 +204,7 @@ namespace PoloniexBot.Trading.Strategies {
                     if (ruleMinQuote.Result == RuleResult.BlockSell) {
                         // if it's blocking sell that means we don't own quote, so go ahead with buying
 
-                        if (ruleMacd.Result == RuleResult.Buy && ruleMeanRev.Result == RuleResult.Buy) {
+                        if (ruleReverse.currentResult == RuleResult.Buy) {
                             // Price is below average and stopped declining
 
                             Buy(sellPrice, postQuoteAmount);
@@ -229,13 +232,6 @@ namespace PoloniexBot.Trading.Strategies {
                         Sell(buyPrice, currQuoteAmount);
                         return;
                     }
-
-                    if (ruleStopLoss.Result == RuleResult.Sell) {
-                        // the price has dropped 10% since buying
-                        // sell to prevent further losses
-                        Sell(buyPrice, currQuoteAmount);
-                        return;
-                    }
                 }
             }
             #endregion
@@ -248,20 +244,25 @@ namespace PoloniexBot.Trading.Strategies {
             Console.WriteLine("Price: " + sellPrice.ToString("F8") + ", Amount: " + quoteAmount.ToString("F8"));
             // -----------------------------
 
-            ulong id = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Buy, sellPrice, quoteAmount).Result;
+            try {
+                ulong id = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Buy, sellPrice * 1.03f, quoteAmount).Result;
 
-            if (id == 0) {
-                Console.WriteLine("Error making buy");
+                if (id == 0) {
+                    Console.WriteLine("Error making buy");
+                }
+                else {
+                    Utility.TradeTracker.ReportBuy(pair, quoteAmount, sellPrice);
+
+                    LastBuyTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+
+                    openPosition = sellPrice;
+                    maximumPrice = sellPrice;
+
+                    ruleForce.currentResult = RuleResult.None;
+                }
             }
-            else {
-                Utility.TradeTracker.ReportBuy(pair, quoteAmount, sellPrice);
-
-                LastBuyTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-
-                openPosition = sellPrice;
-                maximumPrice = sellPrice;
-
-                ruleForce.currentResult = RuleResult.None;
+            catch (Exception e) {
+                Console.WriteLine("Error making buy: " + e.Message);
             }
         }
 
@@ -272,21 +273,25 @@ namespace PoloniexBot.Trading.Strategies {
             Console.WriteLine("Price: " + buyPrice.ToString("F8") + ", Amount: " + quoteAmount.ToString("F8"));
             // -----------------------------
 
-            Task<ulong> postOrderTask = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Sell, buyPrice, quoteAmount);
-            ulong id = postOrderTask.Result;
+            try {
+                ulong id = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Sell, buyPrice * 0.97f, quoteAmount).Result;
 
-            if (id == 0) {
-                Console.WriteLine("Error making sale");
+                if (id == 0) {
+                    Console.WriteLine("Error making sale");
+                }
+                else {
+                    Utility.TradeTracker.ReportSell(pair, quoteAmount, buyPrice);
+
+                    LastSellTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+
+                    openPosition = 0;
+                    maximumPrice = 0;
+
+                    ruleForce.currentResult = RuleResult.None;
+                }
             }
-            else {
-                Utility.TradeTracker.ReportSell(pair, quoteAmount, buyPrice);
-                
-                LastSellTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-
-                openPosition = 0;
-                maximumPrice = 0;
-
-                ruleForce.currentResult = RuleResult.None;
+            catch (Exception e) {
+                Console.WriteLine("Error making sale: " + e.Message);
             }
         }
     }

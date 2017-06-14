@@ -156,6 +156,8 @@ namespace PoloniexBot.Windows.Controls {
 
             long currTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
             for (int i = threadScroll; i < threadData.Count && i < lastShowIndex; i++) {
+
+
                 // show only 9
 
                 g.DrawString("- " + threadData[i].name, Font, brush, posX, posY);
@@ -170,13 +172,14 @@ namespace PoloniexBot.Windows.Controls {
                     statusText = "DONE";
                     statusBrush = brush;
                 }
-                else if (reportTime < 5) {
+                else if (reportTime < 60) {
                     statusText = "UP";
                     statusBrush = brushUP;
                 }
                 else {
                     statusText = "DOWN";
                     statusBrush = brushDOWN;
+                    Utility.NetworkStatus.BootDown();
                 }
 
                 g.DrawString(statusText, Font, statusBrush, posX, posY);

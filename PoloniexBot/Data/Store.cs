@@ -125,7 +125,7 @@ namespace PoloniexBot {
                 }
             }
             public static void PullTickerHistory (CurrencyPair pair) {
-                PullTickerHistory(pair, 6);
+                PullTickerHistory(pair, 3);
             }
             public static void PullTickerHistory (CurrencyPair pair, int iterations) {
                 if (!AllowTickerUpdate) return;
@@ -150,7 +150,7 @@ namespace PoloniexBot {
 
                     ThreadManager.ReportAlive("Data.Store");
                     if (startTime > currTime) break;
-                    Thread.Sleep(250);
+                    Thread.Sleep(1000);
                 }
 
                 // convert into fake tickers

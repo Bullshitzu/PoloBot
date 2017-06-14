@@ -34,13 +34,11 @@ namespace Utility {
 
                     try {
                         method();
-                        isDone = true;
-                        sortPriority -= 500;
+                        if(Threads!=null) Threads.Remove(thread);
                         return;
                     }
                     catch (ThreadAbortException) {
-                        isDone = true;
-                        sortPriority -= 500;
+                        if (Threads != null) Threads.Remove(thread);
                         return;
                     }
                     catch (Exception e) {

@@ -9,6 +9,7 @@ namespace PoloniexBot.Data.Predictors {
     class BollingerBands : Predictor {
 
         private const int Timespan = 300; // seconds
+        private const int BandDeltaTime = 3600; // seconds
 
         public BollingerBands (CurrencyPair pair) : base(pair) { }
         public override void SignResult (ResultSet rs) {
@@ -24,18 +25,43 @@ namespace PoloniexBot.Data.Predictors {
 
             // standard deviation
             double stDev = GetStDev(tickers, sma);
-            double volatility = ((stDev * 2) / sma) * 100;
 
             // upper and lower bands
             double upperBand = sma + (stDev * 2);
             double lowerBand = sma - (stDev * 2);
+
+            double bandSize = upperBand - lowerBand;
+            double bandSizeSMA = bandSize;
+
+            // band size delta
+            if (results != null && results.Count > 10) {
+                long breakTimestamp = tickers.Last().Timestamp - BandDeltaTime;
+
+                double sum = 0;
+                int sumCount = 0;
+
+                for (int i = results.Count - 1; i > 0; i--) {
+                    if (results[i].timestamp < breakTimestamp) break;
+                    
+                    ResultSet.Variable rsTemp;
+                    if (results[i].variables.TryGetValue("bandSize", out rsTemp)) {
+                        sum += rsTemp.value;
+                        sumCount++;
+                    }
+                }
+
+                bandSizeSMA = sum /= sumCount;
+            }
+
+            double bandSizeDelta = ((bandSize - bandSizeSMA) / bandSizeSMA) * 100;
 
             // save results
             ResultSet rs = new ResultSet(tickers.Last().Timestamp);
             rs.variables.Add("sma", new ResultSet.Variable("SMA", sma, 8));
             rs.variables.Add("upperBand", new ResultSet.Variable("Upper Band", upperBand, 8));
             rs.variables.Add("lowerBand", new ResultSet.Variable("Lower Band", lowerBand, 8));
-            rs.variables.Add("volatility", new ResultSet.Variable("Volatility", volatility, 8));
+            rs.variables.Add("bandSize", new ResultSet.Variable("Band Size", bandSize, 8));
+            rs.variables.Add("bandSizeDelta", new ResultSet.Variable("Band Size Delta", bandSizeDelta, 8));
 
             SaveResult(rs);
         }

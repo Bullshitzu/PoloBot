@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleMACD : TradeRule {
 
-        private const double MacdTrigger = 0.1;
+        private const double MacdTrigger = 0.2;
 
         public override void Recalculate (Dictionary<string, double> values) {
 

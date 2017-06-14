@@ -57,6 +57,16 @@ namespace PoloniexBot.Windows {
             strategyWindow.strategyScreen.Start();
         }
 
+        public static void BringToFront () {
+            accountStatusWindow.Focus();
+            trollboxWindow.Focus();
+            tickerFeedWindow.Focus();
+            performanceWindow.Focus();
+            tradeHistoryWindow.Focus();
+            strategyWindow.Focus();
+            consoleWindow.Focus();
+        }
+
         public static void ReloadAllGraphics () {
             if (windows == null) return;
 

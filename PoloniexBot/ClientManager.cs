@@ -10,8 +10,16 @@ using Utility;
 namespace PoloniexBot {
     public static class ClientManager {
 
+        static ClientManager () {
+            RebootTimer = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+        }
+
         static string keysFilename = "settings/APIKeys.file";
         public static PoloniexClient client;
+
+        public static bool Simulate = false;
+
+        private static long RebootTimer = 0;
 
         static string[] LoadApiKey () {
             return FileManager.ReadFile(keysFilename);
@@ -23,9 +31,16 @@ namespace PoloniexBot {
             CLI.Manager.PrintLog("Clearing All Trade Data");
             Data.Store.ClearAllData();
             client = null;
+
+            RebootTimer = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
         }
 
         public static void Reboot () {
+
+            long currTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+            long t = 30 - (currTimestamp - RebootTimer);
+            if (t < 0) t = 0;
+            Thread.Sleep((int)(t * 1000));
 
             CLI.Manager.PrintLog("Booting Up");
 
@@ -37,9 +52,15 @@ namespace PoloniexBot {
                 return;
             }
 
-            CLI.Manager.PrintNote("Initializing Client");
-            client = new PoloniexClient(apiKey[0], apiKey[1]);
-
+            if (Simulate) {
+                CLI.Manager.PrintNote("Initializing Simulated Client");
+                client = new PoloniexClient(apiKey[0], apiKey[1], true);
+            }
+            else {
+                CLI.Manager.PrintNote("Initializing Live Client");
+                client = new PoloniexClient(apiKey[0], apiKey[1], false);
+            }
+            
             // Clock
             CLI.Manager.PrintNote("Calculating Clock Offset");
             Utility.DateTimeHelper.RecalculateClockOffset();
@@ -51,13 +72,19 @@ namespace PoloniexBot {
             // client.Live.SubscribeToTrollboxAsync();
             // client.Live.OnTrollboxMessage += new EventHandler<TrollboxMessageEventArgs>(Windows.GUIManager.trollboxWindow.RecieveMessage);
 
+            Thread.Sleep(1000);
+
             CLI.Manager.PrintNote("Pulling Market Summary");
             RefreshMarketData();
+
+            Thread.Sleep(1000);
 
             // Ticker Feed
             CLI.Manager.PrintNote("Subscribing To Ticker Feed");
             client.Live.SubscribeToTickerAsync();
             client.Live.OnTickerChanged += new EventHandler<TickerChangedEventArgs>(Windows.GUIManager.tickerFeedWindow.RecieveMessage);
+
+            Thread.Sleep(1000);
 
             Trading.Manager.Start();
             ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);

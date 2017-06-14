@@ -26,8 +26,12 @@ namespace PoloniexBot.Windows.Controls {
 
             data = variables.ToArray();
         }
+        public void ClearData () {
+            if (variables != null) variables.Clear();
+            if (data != null) data = null;
+        }
 
-        private string[] drawVariables = { "macd", "meanRev" };
+        private string[] drawVariables = { "macd", "meanRev", "bollingerBandDelta" };
 
         // ---------------------------------------
         // Drawing

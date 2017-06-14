@@ -112,6 +112,8 @@ namespace PoloniexAPI.LiveTools {
 
         private void ProcessMessageTicker (ISerializedValue[] arguments) {
             try {
+                PoloniexBot.Trading.Manager.ReportWampAlive();
+
                 var currencyPair = CurrencyPair.Parse(arguments[0].Deserialize<string>());
                 var priceLast = arguments[1].Deserialize<double>();
                 var orderTopSell = arguments[2].Deserialize<double>();

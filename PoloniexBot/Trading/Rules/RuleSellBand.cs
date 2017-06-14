@@ -18,26 +18,29 @@ namespace PoloniexBot.Trading.Rules {
 
             double minimumSellPrice = openPrice * RuleMinimumSellPrice.ProfitFactor;
 
-            double currPriceDeltaPercent = ((currBuyPrice - minimumSellPrice) / minimumSellPrice) * 100;
-            double maximumPriceDeltaPercent = ((maximumPrice - minimumSellPrice) / minimumSellPrice) * 100;
+            double currPriceDeltaPercent = ((currBuyPrice - openPrice) / openPrice) * 100;
+            double maximumPriceDeltaPercent = ((maximumPrice - openPrice) / openPrice) * 100;
 
             if (maximumPriceDeltaPercent < 0 || currPriceDeltaPercent < 0) {
                 currentResult = RuleResult.None;
                 return;
             }
 
-            double sellPriceTrigger = (0.03193 * Math.Pow(maximumPriceDeltaPercent, 2)) + (0.4210 * maximumPriceDeltaPercent) - 0.40336;
-            if (maximumPriceDeltaPercent > 10) sellPriceTrigger = maximumPriceDeltaPercent - 2.5;
+            double sellPriceTrigger = (maximumPriceDeltaPercent / 4.8571) + 0.5;
+            if (sellPriceTrigger > 2) sellPriceTrigger = 2;
 
-            // if (maximumPriceDeltaPercent > 15) maximumPriceDeltaPercent = 15; // to lock a minimum of 1% band size on high values
-            // double sellPriceTrigger = 0.01071 * Math.Pow(maximumPriceDeltaPercent, 2) + 0.6857 * maximumPriceDeltaPercent - 0.1964;
-            // maximum is based on minimumSellPrice (+0.5%)
-            // 1        0.5
-            // 5        3.5
-            // 15      12.5
+            sellPriceTrigger = maximumPriceDeltaPercent - sellPriceTrigger;
 
-            if (currPriceDeltaPercent <= sellPriceTrigger)
+            // 0	1
+            // 8	2
+            // >8	2
+
+            if (currPriceDeltaPercent <= sellPriceTrigger) {
                 currentResult = RuleResult.Sell;
+                return;
+            }
+
+            currentResult = RuleResult.None;
         }
     }
 }

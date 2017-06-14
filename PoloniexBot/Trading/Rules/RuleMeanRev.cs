@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleMeanRev : TradeRule {
 
-        private const double MeanRevBuyTrigger = 5; // price N% below 3hour mean
+        private const double MeanRevBuyTrigger = 3.5; // price N% below 3hour mean
 
         public override void Recalculate (Dictionary<string, double> values) {
 

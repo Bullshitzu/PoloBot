@@ -171,6 +171,8 @@
     <Compile Include="Trading\Rules\RulePriceTrend.cs" />
     <Compile Include="Trading\Rules\RuleSellBand.cs" />
     <Compile Include="Trading\Rules\RuleStopLoss.cs" />
+    <Compile Include="Trading\Rules\Temp\RuleReverse.cs" />
+    <Compile Include="Trading\Rules\Temp\RuleTrendUp.cs" />
     <Compile Include="Trading\Strategies\Bollinger.cs" />
     <Compile Include="Trading\Strategies\LowAlts.cs" />
     <Compile Include="Trading\Strategies\MeanReverse.cs" />

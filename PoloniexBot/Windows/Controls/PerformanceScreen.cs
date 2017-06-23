@@ -179,7 +179,7 @@ namespace PoloniexBot.Windows.Controls {
                 else {
                     statusText = "DOWN";
                     statusBrush = brushDOWN;
-                    Utility.NetworkStatus.BootDown();
+                    // Utility.NetworkStatus.BootDown();
                 }
 
                 g.DrawString(statusText, Font, statusBrush, posX, posY);

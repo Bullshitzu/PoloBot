@@ -31,7 +31,7 @@ namespace PoloniexBot.Windows.Controls {
             if (data != null) data = null;
         }
 
-        private string[] drawVariables = { "macd", "meanRev", "bollingerBandDelta" };
+        private string[] drawVariables = { "meanRev" };
 
         // ---------------------------------------
         // Drawing
@@ -61,11 +61,11 @@ namespace PoloniexBot.Windows.Controls {
 
             int index = 0;
             for (int x = 0; x < 4; x++) {
-                for (int y = 0; y < 3; y++) {
+                for (int y = 0; y < 4; y++) {
                     if (index >= data.Length) return;
 
                     float xOffset = 5 + (((Width - 10) / 4) * x);
-                    float yOffset = 5 + (((Height - 10) / 3) * y);
+                    float yOffset = 5 + (((Height - 10) / 4) * y);
 
                     DrawField(g, xOffset, yOffset, data[index].Key, data[index].Value);
 
@@ -79,7 +79,7 @@ namespace PoloniexBot.Windows.Controls {
             g.DrawString(pair.ToString("/"), fontTitle, brushEmphasis, new PointF(xOffset, yOffset));
 
             float xPos = xOffset;
-            float yPos = yOffset + fontTitle.Height + 5;
+            float yPos = yOffset + fontTitle.Height;
 
             for (int i = 0; i < drawVariables.Length; i++) {
                 double tempVar = 0;

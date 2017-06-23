@@ -142,15 +142,23 @@ namespace PoloniexBot {
                 List<PoloniexAPI.MarketTools.ITrade> trades = new List<ITrade>();
 
                 for (int j = 0; j < iterations; j++) {
-                    List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, startTime, endTime);
-                    trades.AddRange(temp);
+                    while (true) {
+                        try {
+                            List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, startTime, endTime);
+                            trades.AddRange(temp);
 
-                    startTime += 3600;
-                    endTime += 3600;
+                            startTime += 3600;
+                            endTime += 3600;
 
-                    ThreadManager.ReportAlive("Data.Store");
-                    if (startTime > currTime) break;
-                    Thread.Sleep(1000);
+                            ThreadManager.ReportAlive("Data.Store");
+                            Thread.Sleep(1000);
+                            break;
+                        }
+                        catch (Exception e) {
+                            Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                            Thread.Sleep(1000);
+                        }
+                    }
                 }
 
                 // convert into fake tickers

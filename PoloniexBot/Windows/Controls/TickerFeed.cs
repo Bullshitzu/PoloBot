@@ -37,6 +37,19 @@ namespace PoloniexBot.Windows.Controls {
 
         Dictionary<PoloniexAPI.CurrencyPair, bool> TradedPairs;
 
+        public void MarkAll (bool traded) {
+            if (marketData == null) return;
+
+            TradedPairs.Clear();
+
+            if (traded) { // add all
+                for (int i = 0; i < marketData.Length; i++) {
+                    TradedPairs.Add(marketData[i].pair, true);
+                }
+            }
+            // else don't add, i.e. leave it empty
+        }
+
         public void MarkPair (PoloniexAPI.CurrencyPair pair, bool traded) {
             if (TradedPairs.ContainsKey(pair)) TradedPairs.Remove(pair);
             if (traded) TradedPairs.Add(pair, traded);

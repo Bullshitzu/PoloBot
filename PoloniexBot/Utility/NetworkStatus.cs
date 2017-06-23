@@ -47,9 +47,9 @@ namespace Utility {
                     else if (!netDown) {
                         missCount++;
                         if (missCount > 3) {
-                            netDown = true;
+                            // netDown = true;
                             ErrorLog.ReportError("Network Down");
-                            BootDown();
+                            // BootDown();
                         }
                     }
                 }
@@ -57,9 +57,9 @@ namespace Utility {
                     missCount++;
                     if (missCount > 3) {
                         if (!netDown) {
-                            netDown = true;
+                            // netDown = true;
                             ErrorLog.ReportError("Network Down");
-                            BootDown();
+                            // BootDown();
                         }
                     }
                 }

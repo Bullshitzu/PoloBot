@@ -68,7 +68,6 @@ namespace PoloniexAPI.LiveTools {
         private void OnConnectionBroken (object sender, WampSessionCloseEventArgs e) {
 
             Console.WriteLine("OnConnectionBroken CALLED");
-            // return;
 
             try {
                 foreach (var subscription in ActiveSubscriptions.Values) {
@@ -112,8 +111,6 @@ namespace PoloniexAPI.LiveTools {
 
         private void ProcessMessageTicker (ISerializedValue[] arguments) {
             try {
-                PoloniexBot.Trading.Manager.ReportWampAlive();
-
                 var currencyPair = CurrencyPair.Parse(arguments[0].Deserialize<string>());
                 var priceLast = arguments[1].Deserialize<double>();
                 var orderTopSell = arguments[2].Deserialize<double>();

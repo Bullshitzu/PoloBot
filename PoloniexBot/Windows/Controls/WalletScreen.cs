@@ -46,7 +46,7 @@ namespace PoloniexBot.Windows.Controls {
                 TotalBTCValue = 0;
 
                 for (int i = 0; i < list.Length; i++) {
-                    if (list[i].Value.QuoteAvailable > 0)
+                    if (list[i].Value.BitcoinValue > 0.00005)
                         AvailableAmounts.Add(new AvailableAmount(list[i].Key, list[i].Value.QuoteAvailable, list[i].Value.QuoteOnOrders, list[i].Value.BitcoinValue));
                     TotalBTCValue += list[i].Value.BitcoinValue;
                 }

@@ -24,7 +24,11 @@ namespace PoloniexBot.CLI {
             throw new NotImplementedException();
         }
         public static void Refresh (string[] parameters) {
-            throw new NotImplementedException();
+            Utility.ThreadManager.Register(() => {
+                Trading.Manager.Stop();
+                Trading.Manager.RefreshTradePairs();
+                Trading.Manager.Start();
+            }, "Refresh Trade Pairs", true);
         }
 
         public static void Train (string[] parameters) {
@@ -41,18 +45,22 @@ namespace PoloniexBot.CLI {
         public static void ForceBuy (string[] parameters) {
             if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
 
-            PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
-            if (!Trading.Manager.ForceBuy(pair)) {
-                throw new Exception("Specified currency does not exist");
-            }
+            Utility.ThreadManager.Register(() => {
+                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+                if (!Trading.Manager.ForceBuy(pair)) {
+                    throw new Exception("Specified currency does not exist");
+                }
+            }, "Force Buy", true);
         }
         public static void ForceSell (string[] parameters) {
             if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
 
-            PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
-            if (!Trading.Manager.ForceSell(pair)) {
-                throw new Exception("Specified currency does not exist");
-            }
+            Utility.ThreadManager.Register(() => {
+                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+                if (!Trading.Manager.ForceSell(pair)) {
+                    throw new Exception("Specified currency does not exist");
+                }
+            }, "Force Sell", true);
         }
 
     }

@@ -75,12 +75,17 @@ namespace Utility {
 
         #region Trades
         static List<PoloniexAPI.MarketTools.ITrade> ParseTrades (string json) {
-            List<Trade> trades = JsonConvert.DeserializeObject<List<Trade>>(json);
-            List<PoloniexAPI.MarketTools.ITrade> tradeList = new List<PoloniexAPI.MarketTools.ITrade>();
-            for (int i = 0; i < trades.Count; i++) {
-                tradeList.Add(new PoloniexAPI.MarketTools.Trade(trades[i].date, trades[i].type, trades[i].rate, trades[i].amount, trades[i].total));
+            try {
+                List<Trade> trades = JsonConvert.DeserializeObject<List<Trade>>(json);
+                List<PoloniexAPI.MarketTools.ITrade> tradeList = new List<PoloniexAPI.MarketTools.ITrade>();
+                for (int i = 0; i < trades.Count; i++) {
+                    tradeList.Add(new PoloniexAPI.MarketTools.Trade(trades[i].date, trades[i].type, trades[i].rate, trades[i].amount, trades[i].total));
+                }
+                return tradeList;
             }
-            return tradeList;
+            catch (Exception e) {
+                return null;
+            }
         }
         public class Trade {
             public string date { get; set; }

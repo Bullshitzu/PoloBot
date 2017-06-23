@@ -10,16 +10,10 @@ using Utility;
 namespace PoloniexBot {
     public static class ClientManager {
 
-        static ClientManager () {
-            RebootTimer = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-        }
-
         static string keysFilename = "settings/APIKeys.file";
         public static PoloniexClient client;
 
         public static bool Simulate = false;
-
-        private static long RebootTimer = 0;
 
         static string[] LoadApiKey () {
             return FileManager.ReadFile(keysFilename);
@@ -31,16 +25,9 @@ namespace PoloniexBot {
             CLI.Manager.PrintLog("Clearing All Trade Data");
             Data.Store.ClearAllData();
             client = null;
-
-            RebootTimer = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
         }
 
         public static void Reboot () {
-
-            long currTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-            long t = 30 - (currTimestamp - RebootTimer);
-            if (t < 0) t = 0;
-            Thread.Sleep((int)(t * 1000));
 
             CLI.Manager.PrintLog("Booting Up");
 
@@ -65,7 +52,7 @@ namespace PoloniexBot {
             CLI.Manager.PrintNote("Calculating Clock Offset");
             Utility.DateTimeHelper.RecalculateClockOffset();
 
-            client.Live.Start();
+            
 
             // Trollbox
             // CLI.Manager.PrintNote("Subscribing To Trollbox");
@@ -80,9 +67,20 @@ namespace PoloniexBot {
             Thread.Sleep(1000);
 
             // Ticker Feed
-            CLI.Manager.PrintNote("Subscribing To Ticker Feed");
-            client.Live.SubscribeToTickerAsync();
-            client.Live.OnTickerChanged += new EventHandler<TickerChangedEventArgs>(Windows.GUIManager.tickerFeedWindow.RecieveMessage);
+
+            while (true) {
+                try {
+                    CLI.Manager.PrintNote("Subscribing To Ticker Feed");
+                    client.Live.Start();
+                    client.Live.SubscribeToTickerAsync();
+                    client.Live.OnTickerChanged += new EventHandler<TickerChangedEventArgs>(Windows.GUIManager.tickerFeedWindow.RecieveMessage);
+                    break;
+                }
+                catch (Exception e) {
+                    Console.WriteLine(e.Message);
+                    Thread.Sleep(5000);
+                }
+            }
 
             Thread.Sleep(1000);
 

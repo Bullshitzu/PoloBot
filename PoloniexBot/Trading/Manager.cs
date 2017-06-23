@@ -38,8 +38,6 @@ namespace PoloniexBot.Trading {
             UpdateWallet();
             int walletUpdateCounter = 300;
 
-            ReportWampAlive();
-
             while (true) {
                 if (updatedPairs != null) {
 
@@ -63,8 +61,6 @@ namespace PoloniexBot.Trading {
                     }
                 }
 
-                CheckWampAlive();
-
                 walletUpdateCounter--;
                 if (walletUpdateCounter <= 0) {
                     UpdateWallet();
@@ -73,17 +69,6 @@ namespace PoloniexBot.Trading {
 
                 Utility.ThreadManager.ReportAlive("Trading.Manager");
                 Thread.Sleep(10);
-            }
-        }
-
-        private static long wampReportTimestamp = 0;
-        public static void ReportWampAlive () {
-            wampReportTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-        }
-        private static void CheckWampAlive () {
-            long currTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-            if (currTimestamp - wampReportTimestamp > 120) {
-                Utility.NetworkStatus.BootDown();
             }
         }
 
@@ -107,7 +92,6 @@ namespace PoloniexBot.Trading {
         public static void RefreshTradePairs () {
 
             ClearAllPairs();
-
             Windows.GUIManager.strategyWindow.strategyScreen.ClearData();
 
             // -------------
@@ -125,7 +109,7 @@ namespace PoloniexBot.Trading {
             marketData.Sort(new Utility.MarketDataComparerVolume());
             marketData.Reverse();
 
-            for (int i = 0; i < marketData.Count && tradePairs.Count < 12; i++) {
+            for (int i = 0; i < marketData.Count && tradePairs.Count < 16; i++) {
                 while (true) {
                     try {
                         Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
@@ -296,9 +280,11 @@ namespace PoloniexBot.Trading {
         }
         public static void ClearAllPairs () {
             if (tradePairs == null) return;
+
+            Windows.GUIManager.tickerFeedWindow.tickerFeed.MarkAll(false);
+
             for (int i = 0; i < tradePairs.Count; i++) {
                 tradePairs[i].Stop();
-                Windows.GUIManager.tickerFeedWindow.tickerFeed.MarkPair(tradePairs[i].GetPair(), false);
                 tradePairs[i].Dispose();
                 tradePairs.RemoveAt(i);
             }

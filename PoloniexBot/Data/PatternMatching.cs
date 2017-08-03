@@ -19,57 +19,6 @@ namespace PoloniexBot.Data {
 
         private static List<Pattern> PatternRepo;
 
-        public class Pattern {
-            
-            public double[] movement;
-            public double prediction;
-
-            public Pattern (double[] movement) {
-                this.movement = movement;
-                prediction = 0;
-            }
-            public Pattern (double[] movement, double prediction) {
-                this.movement = movement;
-                this.prediction = prediction;
-            }
-
-            public double GetDistance (Pattern other) {
-
-                if (other.movement.Length < this.movement.Length)
-                    return other.GetDistance(this);
-
-                double errorSum = 0;
-                for (int i = 0; i < movement.Length; i++) {
-                    errorSum += Math.Abs(movement[i] - other.movement[i]);
-                }
-                return errorSum / movement.Length;
-            }
-
-            public override string ToString () {
-                string line = movement.Length + ";";
-                for (int i = 0; i < movement.Length; i++) {
-                    line += movement[i].ToString("F8") + ";";
-                }
-                line += prediction.ToString("F8");
-                return line;
-            }
-
-            public static Pattern Parse (string text) {
-                string[] parts = text.Split(';');
-
-                int movementNum = int.Parse(parts[0]);
-                double[] mov = new double[movementNum];
-
-                for (int i = 0; i < movementNum; i++) {
-                    mov[i] = double.Parse(parts[i + 1]);
-                }
-
-                double pred = double.Parse(parts[parts.Length - 1]);
-
-                Pattern p = new Pattern(mov, pred);
-                return p;
-            }
-        }
         private struct PatternComparer : IComparable<PatternComparer> {
             public Pattern pattern;
             public double difference;

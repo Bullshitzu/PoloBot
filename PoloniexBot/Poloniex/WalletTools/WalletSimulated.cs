@@ -83,7 +83,6 @@ namespace PoloniexAPI.WalletTools {
 
         internal WalletSimulated (ApiWebClient apiWebClient) {
             ApiWebClient = apiWebClient;
-
             Reset();
         }
 

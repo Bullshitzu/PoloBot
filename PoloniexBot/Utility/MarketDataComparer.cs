@@ -15,4 +15,10 @@ namespace Utility {
             return x.Value.PriceLast.CompareTo(y.Value.PriceLast);
         }
     }
+
+    public class MarketDataComparerTrend : IComparer<KeyValuePair<PoloniexAPI.CurrencyPair, double>> {
+        public int Compare (KeyValuePair<PoloniexAPI.CurrencyPair, double> x, KeyValuePair<PoloniexAPI.CurrencyPair, double> y) {
+            return x.Value.CompareTo(y.Value);
+        }
+    }
 }

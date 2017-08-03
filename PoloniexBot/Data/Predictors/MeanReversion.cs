@@ -19,7 +19,7 @@ namespace PoloniexBot.Data.Predictors {
         // Setup Vars
         // -------------------
 
-        private const long MeanTimePeriod = 10800; // 3 hours
+        public static long MeanTimePeriod = 12600; // 3 hours
 
         // -------------------
 

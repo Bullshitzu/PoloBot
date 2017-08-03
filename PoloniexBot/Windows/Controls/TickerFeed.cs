@@ -70,6 +70,7 @@ namespace PoloniexBot.Windows.Controls {
         }
 
         public void Sort () {
+            if (marketData == null) return;
             List<CurrencyDataPair> list = new List<CurrencyDataPair>(marketData);
             list.Sort();
             list.Reverse();

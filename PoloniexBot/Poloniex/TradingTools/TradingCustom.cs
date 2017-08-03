@@ -51,6 +51,16 @@ namespace PoloniexAPI.TradingTools {
         }
 
         private ulong PostOrder (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote) {
+
+            switch (type) {
+                case OrderType.Buy:
+                    pricePerCoin *= 1.05f;
+                    break;
+                case OrderType.Sell:
+                    pricePerCoin *= 0.95f;
+                    break;
+            }
+            
             try {
                 pricePerCoin = double.Parse(pricePerCoin.ToString("F8"));
                 var postData = new Dictionary<string, object> {

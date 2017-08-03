@@ -53,7 +53,9 @@ namespace PoloniexBot.CLI {
 
             comms.Add(new Command("savetradedata", "Saves trade data to file", CommandImplementations.SaveTradeData));
             comms.Add(new Command("loadtradedata", "Loads trade data from file", CommandImplementations.LoadTradeData));
-            comms.Add(new Command("train", "...", CommandImplementations.Train));
+
+            comms.Add(new Command("savepatterns", "Saves pattern data to file", CommandImplementations.SavePatternData));
+            comms.Add(new Command("loadpatterns", "Loads pattern data from file", CommandImplementations.LoadPatternData));
 
             comms.Add(new Command("buy", "Forces a manual buy of the specified trade pair", new Parameter[] { new Parameter("currency") }, CommandImplementations.ForceBuy));
             comms.Add(new Command("sell", "Forces a manual sell of the specified trade pair", new Parameter[] { new Parameter("currency") }, CommandImplementations.ForceSell));
@@ -73,7 +75,7 @@ namespace PoloniexBot.CLI {
             RefreshWindow();
         }
         public static void PrintError (string text) {
-            messages.Insert(0, new Message(MessageType.Error, text));
+            // messages.Insert(0, new Message(MessageType.Error, text));
             RefreshWindow();
         }
         public static void PrintLog (string text) {

@@ -27,7 +27,7 @@ namespace PoloniexBot.Trading {
             this.pair = pair;
             invokeQueue = new TSList<InvokePair>();
 
-            strategy = new Strategies.LowAlts(pair);
+            strategy = new Strategies.MeanRevMACD(pair);
         }
         public void Setup (bool pullTickerHistory = true) {
 
@@ -37,10 +37,15 @@ namespace PoloniexBot.Trading {
                 Console.WriteLine("done");
             }
 
-            strategy.Setup();
+            strategy.Setup(pullTickerHistory);
         }
         public void RecalculateVolatility () {
             // calculate the standard price deviation in past 6 hours (in % relative to price of last ticker)
+
+            // note: DEBUG
+            strategy.SetVolatility(0.3);
+            return;
+            // note: DEBUG
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't recalculate predictor volatility for " + pair + " - no tickers available");
@@ -178,6 +183,14 @@ namespace PoloniexBot.Trading {
         // quote -> base = amount * price
 
         #endregion
+
+        public void Reset () {
+            strategy.Reset();
+        }
+
+        public Strategies.Strategy GetStrategy () {
+            return strategy;
+        }
 
     }
 }

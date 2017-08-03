@@ -6,17 +6,31 @@ using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
     class RuleSellBand : TradeRule {
+
+        public static double MaxPriceDeltaFactor = 2.74127550;
+        public static double SellPriceTriggerOffset = -0.88253461;
+        public static double MaxBandSize = 3.045;
+
+        public static double PriceTriggerMult = 0.849;
+
         public override void Recalculate (Dictionary<string, double> values) {
 
             double currBuyPrice = 0;
             double openPrice = 0;
             double maximumPrice = 0;
 
-            if (!values.TryGetValue("buyPrice", out currBuyPrice)) throw new VariableNotIncludedException();
-            if (!values.TryGetValue("openPrice", out openPrice)) throw new VariableNotIncludedException();
-            if (!values.TryGetValue("maxPrice", out maximumPrice)) throw new VariableNotIncludedException();
+            double buyTimestamp = 0;
+            double tickerTimestamp = 0;
 
-            double minimumSellPrice = openPrice * RuleMinimumSellPrice.ProfitFactor;
+            // lastBuyTimestamp
+            // lastTickerTimestamp
+
+            if (!values.TryGetValue("buyPrice", out currBuyPrice)) throw new VariableNotIncludedException("buyPrice");
+            if (!values.TryGetValue("openPrice", out openPrice)) throw new VariableNotIncludedException("openPrice");
+            if (!values.TryGetValue("maxPrice", out maximumPrice)) throw new VariableNotIncludedException("maxPrice");
+
+            if (!values.TryGetValue("lastBuyTimestamp", out buyTimestamp)) throw new VariableNotIncludedException("lastBuyTimestamp");
+            if (!values.TryGetValue("lastTickerTimestamp", out tickerTimestamp)) throw new VariableNotIncludedException("lastTickerTimestamp");
 
             double currPriceDeltaPercent = ((currBuyPrice - openPrice) / openPrice) * 100;
             double maximumPriceDeltaPercent = ((maximumPrice - openPrice) / openPrice) * 100;
@@ -26,16 +40,18 @@ namespace PoloniexBot.Trading.Rules {
                 return;
             }
 
-            double sellPriceTrigger = (maximumPriceDeltaPercent / 4) + 1;
-            if (sellPriceTrigger > 2.5) sellPriceTrigger = 2.5;
+            double sellPriceTrigger = (maximumPriceDeltaPercent / MaxPriceDeltaFactor) + SellPriceTriggerOffset;
+            if (sellPriceTrigger > MaxBandSize) sellPriceTrigger = MaxBandSize;
+            if (sellPriceTrigger < 0) sellPriceTrigger = 0;
 
+            sellPriceTrigger *= PriceTriggerMult;
             sellPriceTrigger = maximumPriceDeltaPercent - sellPriceTrigger;
 
-            // 0       	1
-            // 4       	2
-            // 6      	2.5
+            // 1.5 = 0
+            // 3 = 0.5
+            // 4.5 = 1
 
-            if (currPriceDeltaPercent <= sellPriceTrigger) {
+            if (currPriceDeltaPercent < sellPriceTrigger) {
                 currentResult = RuleResult.Sell;
                 return;
             }

@@ -54,7 +54,7 @@ namespace PoloniexBot.Data.Predictors {
             double diNeg = 0;
 
             if (results.Count > 0) {
-                long startTime = tickers.Last().Timestamp - (Period * 15);
+                long startTime = tickers.Last().Timestamp - (Period * 14);
                 // note: wilders recommends 14 periods but i like round numbers
 
                 List<double> dmPosVars = new List<double>();

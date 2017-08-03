@@ -19,6 +19,9 @@ namespace PoloniexBot {
                 if (allowUpdatePairs != null) allowUpdatePairs.Clear();
                 if (tickerData != null) tickerData.Clear();
             }
+            public static void ClearTickerData () {
+                if (tickerData != null) tickerData.Clear();
+            }
 
             public static bool AllowTickerUpdate = true;
 
@@ -125,9 +128,9 @@ namespace PoloniexBot {
                 }
             }
             public static void PullTickerHistory (CurrencyPair pair) {
-                PullTickerHistory(pair, 3);
+                PullTickerHistory(pair, 6);
             }
-            public static void PullTickerHistory (CurrencyPair pair, int iterations) {
+            public static void PullTickerHistory (CurrencyPair pair, int hours) {
                 if (!AllowTickerUpdate) return;
 
                 if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
@@ -135,29 +138,79 @@ namespace PoloniexBot {
 
                 // pull last trades
 
-                int currTime = (int)DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-                int startTime = currTime - (iterations * 3600);
-                int endTime = startTime + 3600;
+                long currTime = DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+                long startTime = currTime - (hours * 3600);
 
                 List<PoloniexAPI.MarketTools.ITrade> trades = new List<ITrade>();
 
-                for (int j = 0; j < iterations; j++) {
-                    while (true) {
-                        try {
-                            List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, startTime, endTime);
-                            trades.AddRange(temp);
+                while (true) {
+                    try {
+                        List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, (int)startTime, (int)currTime);
+                        if (temp == null) throw new Exception("WebApiCustom returned NULL tickers");
 
-                            startTime += 3600;
-                            endTime += 3600;
+                        Console.WriteLine("Pulled " + temp.Count + " tickers!");
 
-                            ThreadManager.ReportAlive("Data.Store");
-                            Thread.Sleep(1000);
-                            break;
-                        }
-                        catch (Exception e) {
-                            Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                            Thread.Sleep(1000);
-                        }
+                        trades.AddRange(temp);
+
+                        if (temp.Count < 300) break;
+
+                        currTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(temp.Last().Time);
+
+                        ThreadManager.ReportAlive("Data.Store");
+                        Thread.Sleep(1000);
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                        Thread.Sleep(3000);
+                    }
+                }
+
+                // convert into fake tickers
+
+                TickerChangedEventArgs[] fakeTickers = new TickerChangedEventArgs[trades.Count];
+                for (int j = 0; j < trades.Count; j++) {
+
+                    MarketData md = new MarketData(trades[j].PricePerCoin);
+
+                    TickerChangedEventArgs ticker = new TickerChangedEventArgs(pair, md);
+                    ticker.Timestamp = DateTimeHelper.DateTimeToUnixTimestamp(trades[j].Time);
+
+                    fakeTickers[j] = ticker;
+                }
+
+                // dump them into ticker data 
+
+                TSList<TickerChangedEventArgs> tickerList = new TSList<TickerChangedEventArgs>(fakeTickers);
+                tickerList.Sort();
+
+                tickerData.Add(tickerList);
+                allowUpdatePairs.Add(pair);
+            }
+            public static void PullTickerHistory (CurrencyPair pair, long startTimestamp, long endTimestamp) {
+                if (!AllowTickerUpdate) return;
+
+                if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
+                if (allowUpdatePairs == null) allowUpdatePairs = new List<CurrencyPair>();
+
+                // pull last trades
+
+                List<PoloniexAPI.MarketTools.ITrade> trades = new List<ITrade>();
+
+                while (true) {
+                    try {
+                        List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, (int)startTimestamp, (int)endTimestamp);
+                        trades.AddRange(temp);
+
+                        if (temp.Count < 300) break;
+
+                        endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(temp.Last().Time);
+
+                        ThreadManager.ReportAlive("Data.Store");
+                        Thread.Sleep(1000);
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                        Thread.Sleep(1000);
                     }
                 }
 
@@ -221,41 +274,49 @@ namespace PoloniexBot {
 
             // File Managment
             public static void SaveTradeData () {
-                List<string> lines = new List<string>();
+
+                List<TickerChangedEventArgs> allTickers = new List<TickerChangedEventArgs>();
                 for (int i = 0; i < tickerData.Count; i++) {
                     for (int j = 0; j < tickerData[i].Count; j++) {
                         TickerChangedEventArgs currTicker = tickerData[i][j];
-                        string currLine = string.Format("{0}:{1}:{2}:{3}",
-                            currTicker.CurrencyPair,
-                            currTicker.Timestamp,
-                            currTicker.MarketData.PriceLast.ToString("F8"),
-                            currTicker.MarketData.Volume24HourBase.ToString("F8"));
-                        lines.Add(currLine);
+                        allTickers.Add(currTicker);
                     }
+                }
+
+                allTickers.Sort();
+
+                List<string> lines = new List<string>();
+                for (int i = 0; i < allTickers.Count; i++) {
+                    TickerChangedEventArgs currTicker = allTickers[i];
+                    string currLine = string.Format("{0}:{1}:{2}:{3}",
+                        currTicker.CurrencyPair,
+                        currTicker.Timestamp,
+                        currTicker.MarketData.PriceLast.ToString("F8"),
+                        currTicker.MarketData.Volume24HourBase.ToString("F8"));
+                    lines.Add(currLine);
                 }
 
                 CLI.Manager.PrintLog("Saving ticker data to file (" + lines.Count + " tickers)");
                 Utility.FileManager.SaveFile("data/ticker data", lines.ToArray());
                 CLI.Manager.PrintLog("Done!");
             }
-            public static void LoadTradeData () {
-
-                CLI.Manager.PrintLog("Halting trade manager");
-                Trading.Manager.Stop();
-
-                CLI.Manager.PrintLog("Disabling ticker update");
-                AllowTickerUpdate = false;
+            public static TSList<TSList<TickerChangedEventArgs>> LoadTradeData (bool addTickers = true) {
 
                 CLI.Manager.PrintLog("Clearing trade pairs");
                 Trading.Manager.ClearAllPairs();
 
                 CLI.Manager.PrintLog("Clearing current ticker data");
                 if (allowUpdatePairs != null) allowUpdatePairs.Clear();
-                if (tickerData != null) tickerData.Clear();
+                if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
+                tickerData.Clear();
 
                 CLI.Manager.PrintLog("Loading ticker data from file");
                 string[] lines = Utility.FileManager.ReadFile("data/ticker data");
                 if (lines == null || lines.Length == 0) throw new Exception("Failed reading file - no lines returned");
+
+                TSList<TSList<TickerChangedEventArgs>> tickerStoreReference;
+                if (addTickers) tickerStoreReference = tickerData;
+                else tickerStoreReference = new TSList<TSList<TickerChangedEventArgs>>();
 
                 for (int i = 0; i < lines.Length; i++) {
                     string[] parts = lines[i].Split(':');
@@ -273,31 +334,25 @@ namespace PoloniexBot {
                     if (!allowUpdatePairs.Contains(currPair)) allowUpdatePairs.Add(currPair);
 
                     // add to list
-                    if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
-
+                    
                     bool added = false;
-                    for (int j = 0; j < tickerData.Count; j++) {
-                        if (tickerData[j][0].CurrencyPair == currPair) {
-                            tickerData[j].Add(currTicker);
+                    for (int j = 0; j < tickerStoreReference.Count; j++) {
+                        if (tickerStoreReference[j][0].CurrencyPair == currPair) {
+                            tickerStoreReference[j].Add(currTicker);
                             added = true;
                             break;
                         }
                     }
 
                     if (!added) {
-                        tickerData.Add(new TSList<TickerChangedEventArgs>());
-                        tickerData.Last().Add(currTicker);
+                        tickerStoreReference.Add(new TSList<TickerChangedEventArgs>());
+                        tickerStoreReference.Last().Add(currTicker);
                     }
                 }
 
                 CLI.Manager.PrintLog("Loading complete (" + lines.Length + " tickers)");
 
-                CLI.Manager.PrintLog("Refreshing trade pairs");
-                Trading.Manager.RefreshTradePairsLocal();
-
-                CLI.Manager.PrintLog("Restarting trade manager");
-                Trading.Manager.Start();
-
+                return tickerStoreReference;
             }
         }
     }

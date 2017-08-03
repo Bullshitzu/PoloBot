@@ -31,15 +31,18 @@ namespace PoloniexBot.CLI {
             }, "Refresh Trade Pairs", true);
         }
 
-        public static void Train (string[] parameters) {
-            Utility.ThreadManager.Register(Training.Train, "Pattern-Matched Training", false);
-        }
-
         public static void SaveTradeData (string[] parameters) {
             Utility.ThreadManager.Register(Data.Store.SaveTradeData, "Trade Data Save", false);
         }
         public static void LoadTradeData (string[] parameters) {
-            Utility.ThreadManager.Register(Data.Store.LoadTradeData, "Trade Data Load", false);
+            Utility.ThreadManager.Register(() => { Data.Store.LoadTradeData(); }, "Trade Data Load", false);
+        }
+
+        public static void SavePatternData (string[] parameters) {
+            Utility.ThreadManager.Register(() => { Data.PatternMatching.Manager.SaveToFile(); }, "Pattern Data Save", false);
+        }
+        public static void LoadPatternData (string[] parameters) {
+            Utility.ThreadManager.Register(() => { Data.PatternMatching.Manager.LoadFromFile(); }, "Pattern Data Load", false);
         }
 
         public static void ForceBuy (string[] parameters) {

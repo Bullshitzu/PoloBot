@@ -9,11 +9,13 @@ namespace PoloniexBot.Trading.Rules {
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double bandSizeDelta = 0;
+            double currPrice = 0;
+            double lowerBand = 0;
 
-            if (!values.TryGetValue("bollingerBandDelta", out bandSizeDelta)) throw new VariableNotIncludedException();
+            if (!values.TryGetValue("buyPrice", out currPrice)) throw new VariableNotIncludedException("buyPrice");
+            if (!values.TryGetValue("bollingerBandLow", out lowerBand)) throw new VariableNotIncludedException("bollingerBandLow");
 
-            if (bandSizeDelta < 0) {
+            if (currPrice < lowerBand) {
                 currentResult = RuleResult.Buy;
                 return;
             }

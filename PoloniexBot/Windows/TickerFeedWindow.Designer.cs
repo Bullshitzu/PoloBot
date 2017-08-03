@@ -36,9 +36,10 @@ namespace PoloniexBot.Windows {
             // 
             this.pbDrag.BackColor = System.Drawing.Color.Transparent;
             this.pbDrag.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("pbDrag.BackgroundImage")));
-            this.pbDrag.Location = new System.Drawing.Point(184, 15);
+            this.pbDrag.Location = new System.Drawing.Point(307, 23);
+            this.pbDrag.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.pbDrag.Name = "pbDrag";
-            this.pbDrag.Size = new System.Drawing.Size(32, 32);
+            this.pbDrag.Size = new System.Drawing.Size(53, 49);
             this.pbDrag.TabIndex = 0;
             this.pbDrag.TabStop = false;
             this.pbDrag.Visible = false;
@@ -56,26 +57,25 @@ namespace PoloniexBot.Windows {
             // tickerFeed
             // 
             this.tickerFeed.BackColor = System.Drawing.Color.Transparent;
-            this.tickerFeed.Font = new System.Drawing.Font("Telegrama Render", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            // new System.Drawing.Font("Calibri Bold Caps", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.tickerFeed.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
             this.tickerFeed.ForeColor = System.Drawing.SystemColors.ButtonFace;
             this.tickerFeed.Location = new System.Drawing.Point(4, 4);
             this.tickerFeed.Name = "tickerFeed";
             this.tickerFeed.Size = new System.Drawing.Size(392, 992);
             this.tickerFeed.TabIndex = 1;
-            this.tickerFeed.Text = "tickerFeed";
             // 
             // TickerFeedWindow
             // 
-            this.Font = new System.Drawing.Font("Telegrama Render", 12F, System.Drawing.FontStyle.Bold);
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
-            this.ClientSize = new System.Drawing.Size(400, 1000);
+            this.ClientSize = new System.Drawing.Size(667, 1092);
             this.Controls.Add(this.pbDrag);
             this.Controls.Add(this.tickerFeed);
+            this.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.Name = "TickerFeedWindow";
             this.Opacity = 0.75D;
             this.ShowIcon = false;

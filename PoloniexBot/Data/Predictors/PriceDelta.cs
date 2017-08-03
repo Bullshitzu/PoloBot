@@ -13,11 +13,9 @@ namespace PoloniexBot.Data.Predictors {
             rs.signature = "Price Delta";
         }
 
-        static int[] IndexPeriods = { 60, 300, 500}; // 3, 5 minutes
-        // these will compound to 8 minutes
-
-        // |---------------|----------|-----|
-        //      10min             5min      3min
+        public static long Timeframe1 = 60; // 1 min
+        public static long Timeframe2 = 300; // 5 min
+        public static long Timeframe3 = 900; // 30 min
 
         public void Recalculate (object dataSet) {
             TickerChangedEventArgs[] tickers = (TickerChangedEventArgs[])dataSet;
@@ -30,44 +28,31 @@ namespace PoloniexBot.Data.Predictors {
 
             // calculate price deltas for index periods
 
-            int endIndex = tickers.Length - 1;
-            int totalTime = 0;
+            double delta1 = GetPriceDelta(tickers, Timeframe1);
+            double delta2 = GetPriceDelta(tickers, Timeframe2);
+            double delta3 = GetPriceDelta(tickers, Timeframe3);
 
-            double deltaAvg = 0;
-
-            for (int i = 0; i < IndexPeriods.Length; i++) {
-                totalTime += IndexPeriods[i];
-                double delta = GetPriceDelta(tickers, totalTime, endIndex, ref endIndex);
-                deltaAvg += delta / (i + 1);
-
-                rs.variables.Add("delta" + i, new ResultSet.Variable("Delta " + i, delta, 8));
-            }
-
-            deltaAvg /= IndexPeriods.Length;
-            rs.variables.Add("deltaAvg", new ResultSet.Variable("Delta Avg.", deltaAvg, 8));
+            rs.variables.Add("priceDelta1", new ResultSet.Variable("Price Delta 1", delta1, 8));
+            rs.variables.Add("priceDelta2", new ResultSet.Variable("Price Delta 2", delta2, 8));
+            rs.variables.Add("priceDelta3", new ResultSet.Variable("Price Delta 3", delta3, 8));
 
             SaveResult(rs);
         }
 
-        private double GetPriceDelta (TickerChangedEventArgs[] tickers, int timeDelta, int startIndex, ref int endIndex) {
-            // returns price change in % from startIndex (last) to endIndex (first)
-            // (its going in reverse...)
+        private double GetPriceDelta (TickerChangedEventArgs[] tickers, long timeframe) {
 
-            double startPrice = tickers[startIndex].MarketData.OrderTopBuy;
-            double endPrice = startPrice;
+            double endPrice = tickers.Last().MarketData.OrderTopBuy;
+            double startPrice = endPrice;
 
-            long startTime = tickers[startIndex].Timestamp;
-            long endTime = startTime - timeDelta;
-
-            for (int i = startIndex; i >= 0; i--) {
-                if (tickers[i].Timestamp < endTime) {
-                    endIndex = i;
-                    break;
-                }
-                endPrice = tickers[i].MarketData.OrderTopBuy;
+            long endTime = tickers.Last().Timestamp;
+            long startTime = endTime - timeframe;
+            
+            for (int i = tickers.Length-1; i >= 0; i--) {
+                if (tickers[i].Timestamp < startTime) break;
+                startPrice = tickers[i].MarketData.OrderTopBuy;
             }
 
-            double delta = ((startPrice - endPrice) / endPrice) * 100;
+            double delta = ((endPrice - startPrice) / startPrice) * 100;
             return delta;
         }
     }

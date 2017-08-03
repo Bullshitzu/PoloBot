@@ -13,7 +13,8 @@ namespace PoloniexBot {
         static string keysFilename = "settings/APIKeys.file";
         public static PoloniexClient client;
 
-        public static bool Simulate = false;
+        public static bool Simulate = true;
+        public static bool Training = true;
 
         static string[] LoadApiKey () {
             return FileManager.ReadFile(keysFilename);
@@ -47,33 +48,27 @@ namespace PoloniexBot {
                 CLI.Manager.PrintNote("Initializing Live Client");
                 client = new PoloniexClient(apiKey[0], apiKey[1], false);
             }
-            
+
             // Clock
             CLI.Manager.PrintNote("Calculating Clock Offset");
             Utility.DateTimeHelper.RecalculateClockOffset();
 
-            
+            Thread.Sleep(1000);
 
-            // Trollbox
-            // CLI.Manager.PrintNote("Subscribing To Trollbox");
-            // client.Live.SubscribeToTrollboxAsync();
-            // client.Live.OnTrollboxMessage += new EventHandler<TrollboxMessageEventArgs>(Windows.GUIManager.trollboxWindow.RecieveMessage);
+            // Patterns
+            CLI.Manager.PrintNote("Loading Price Patterns");
+            Data.PatternMatching.Manager.LoadFromFile();
 
             Thread.Sleep(1000);
 
-            CLI.Manager.PrintNote("Pulling Market Summary");
-            RefreshMarketData();
-
-            Thread.Sleep(1000);
-
-            // Ticker Feed
+            // Market Summary
 
             while (true) {
                 try {
-                    CLI.Manager.PrintNote("Subscribing To Ticker Feed");
-                    client.Live.Start();
-                    client.Live.SubscribeToTickerAsync();
-                    client.Live.OnTickerChanged += new EventHandler<TickerChangedEventArgs>(Windows.GUIManager.tickerFeedWindow.RecieveMessage);
+                    CLI.Manager.PrintNote("Pulling Market Summary");
+                    RefreshMarketData();
+
+                    Thread.Sleep(1000);
                     break;
                 }
                 catch (Exception e) {
@@ -82,10 +77,63 @@ namespace PoloniexBot {
                 }
             }
 
-            Thread.Sleep(1000);
+            // Training
 
-            Trading.Manager.Start();
-            ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);
+            if (Training) {
+                ThreadManager.Register(() => {
+                    /*
+                    List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> markets =
+                        new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
+
+                    markets.Sort(new Utility.MarketDataComparerVolume());
+                    markets.Reverse();
+
+                    long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+                    long startTimestamp = endTimestamp - (6 * 3600 * 1);
+
+                    for (int i = 0; i < markets.Count && i < 10; i++) {
+                        Console.WriteLine("Pulling " + markets[i].Key);
+
+                        try {
+                            Data.Store.PullTickerHistory(markets[i].Key, startTimestamp, endTimestamp);
+                        }
+                        catch (Exception e) {
+                            Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                        }
+                    }
+
+                    Data.Store.SaveTradeData();
+                    */
+                    // Simulation.SimulatePair(markets[i].Key);
+                    // Simulation.SimulateIdeal(markets[i].Key);
+
+                    Simulation.SimulateAll();
+
+                }, "Data Pull", true);
+            }
+            else {
+
+                // Ticker Feed
+
+                while (true) {
+                    try {
+                        CLI.Manager.PrintNote("Subscribing To Ticker Feed");
+                        client.Live.Start();
+                        client.Live.SubscribeToTickerAsync();
+                        client.Live.OnTickerChanged += new EventHandler<TickerChangedEventArgs>(Windows.GUIManager.tickerFeedWindow.RecieveMessage);
+                        break;
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e.Message);
+                        Thread.Sleep(5000);
+                    }
+                }
+
+                Thread.Sleep(1000);
+
+                Trading.Manager.Start();
+                ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);
+            }
         }
 
         // ---------------------------------------------

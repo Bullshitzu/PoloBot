@@ -5,21 +5,26 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
-    class RuleMACD : TradeRule {
+    class RuleMACDTrend : TradeRule {
 
-        public static double MacdTrigger = -0.09;
+        public static double BuyTrigger = 0;
+        public static double SellTrigger = -3; // note: irrelevant, not used
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double macd = 0;
+            double macdTrend = 0;
 
-            if (!values.TryGetValue("macd", out macd)) throw new VariableNotIncludedException();
+            if (!values.TryGetValue("macdTrend", out macdTrend)) throw new VariableNotIncludedException();
 
-            if (macd > MacdTrigger) {
+            // Console.WriteLine("MACD Trend: "+macdTrend.ToString());
+
+
+            if (macdTrend > BuyTrigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }
-            if (macd < MacdTrigger) {
+
+            if (macdTrend < SellTrigger) {
                 currentResult = RuleResult.Sell;
                 return;
             }

@@ -17,6 +17,7 @@ namespace PoloniexBot.Trading.Rules {
 
     public class VariableNotIncludedException : Exception {
         public VariableNotIncludedException () : base("Variable doesn't exist in the dictionary") { }
+        public VariableNotIncludedException (string var) : base("Variable doesn't exist in the dictionary: " + var) { }
     }
 
     abstract class TradeRule {

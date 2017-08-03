@@ -116,6 +116,7 @@ namespace Utility {
         public static void ClearAll () {
             if (Trades != null) Trades.Clear();
             if (DoneTrades != null) DoneTrades.Clear();
+            UpdateTradesGUI();
         }
 
         public static void ReportBuy (CurrencyPair pair, double amountQuote, double price) {
@@ -152,6 +153,7 @@ namespace Utility {
 
         private static void SaveData () {
             if (Trades == null) return;
+            if (PoloniexBot.ClientManager.Simulate) return;
 
             List<string> lines = new List<string>();
             lines.Add(Trades.Count.ToString());
@@ -162,6 +164,8 @@ namespace Utility {
             FileManager.SaveFile(DirectoryName + "/" + Filename, lines.ToArray());
         }
         public static void LoadData () {
+            if (PoloniexBot.ClientManager.Simulate) return;
+
             string[] lines = FileManager.ReadFile(DirectoryName + "/" + Filename);
             if(lines == null) return;
 

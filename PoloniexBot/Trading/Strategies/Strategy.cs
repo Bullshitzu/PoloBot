@@ -22,13 +22,14 @@ namespace PoloniexBot.Trading.Strategies {
 
         public Strategy (CurrencyPair pair) {
             this.pair = pair;
+            ruleForce = new Rules.RuleManualForce();
         }
 
         public void SetVolatility (double value) {
             this.VolatilityScore = value;
         }
 
-        public abstract void Setup (); // Called on TPManager initialization, after data pull
+        public abstract void Setup (bool simulate = false); // Called on TPManager initialization, after data pull
         public abstract void UpdatePredictors (); // Called on ticker update
         public abstract void EvaluateTrade (); // Called after Update, handle buy/sell here
 
@@ -41,5 +42,11 @@ namespace PoloniexBot.Trading.Strategies {
             EvaluateTrade();
         }
 
+        public virtual void Reset () {
+            LastBuyTime = 0;
+            TradeTimeBlock = 30;
+            LastSellTime = 0;
+            VolatilityScore = 0;
+        }
     }
 }

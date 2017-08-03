@@ -67,6 +67,8 @@ namespace PoloniexBot.Trading {
                     walletUpdateCounter = 300;
                 }
 
+                if (tradePairs != null) Rules.RuleGlobalDrop.ClearUnusedPairs(tradePairs.ToArray());
+
                 Utility.ThreadManager.ReportAlive("Trading.Manager");
                 Thread.Sleep(10);
             }
@@ -95,6 +97,8 @@ namespace PoloniexBot.Trading {
             Windows.GUIManager.strategyWindow.strategyScreen.ClearData();
 
             // -------------
+            // Refresh market data
+            // -------------
 
             List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> marketData =
                 new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
@@ -105,15 +109,67 @@ namespace PoloniexBot.Trading {
             tradePairs.Clear();
 
             // -------------
+            // Filter out low priced currencies
+            // -------------
+
+            List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> filteredMarketData =
+                new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>();
+
+            for (int i = 0; i < marketData.Count; i++) {
+                if (marketData[i].Value.PriceLast > 0.0001) filteredMarketData.Add(marketData[i]);
+            }
+
+            // -------------
+            // Sort by volume
+            // -------------
 
             marketData.Sort(new Utility.MarketDataComparerVolume());
             marketData.Reverse();
 
-            for (int i = 0; i < marketData.Count && tradePairs.Count < 16; i++) {
+            // -------------
+            // Filter BTC base already done while pulling
+            // -------------
+
+            // -------------
+            // Filter by volume (above 100 BTC)
+            // -------------
+
+            List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> filteredMarketData2 = 
+                new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>();
+
+            for (int i = 0; i < filteredMarketData.Count; i++) {
+                if(filteredMarketData[i].Value.Volume24HourBase >= 100)
+                    filteredMarketData2.Add(filteredMarketData[i]);
+            }
+
+            // -------------
+            // For each, pull recent trades and recalculate volatility
+            // -------------
+
+            List<KeyValuePair<CurrencyPair, double>> pairTrend = new List<KeyValuePair<CurrencyPair, double>>();
+
+            for (int i = 0; i < filteredMarketData2.Count; i++) {
+                Data.Store.PullTickerHistory(filteredMarketData2[i].Key, 3);
+                double volatility = CalculateVolatility(filteredMarketData2[i].Key);
+                pairTrend.Add(new KeyValuePair<CurrencyPair, double>(filteredMarketData2[i].Key, volatility));
+            }
+
+            // -------------
+            // Sort by volatility
+            // -------------
+
+            pairTrend.Sort(new Utility.MarketDataComparerTrend());
+            pairTrend.Reverse();
+
+            // -------------
+            // Pick top 20 to trade
+            // -------------
+
+            for (int i = 0; i < pairTrend.Count && tradePairs.Count < 20; i++) {
                 while (true) {
                     try {
-                        Console.WriteLine("Adding " + marketData[i].Key + " to traded pairs");
-                        AddPair(marketData[i].Key);
+                        Console.WriteLine("Adding " + pairTrend[i].Key + " to traded pairs");
+                        AddPair(pairTrend[i].Key);
                         
                         break;
                     }
@@ -145,6 +201,46 @@ namespace PoloniexBot.Trading {
                     AddPairLocal(newPairs[i]);
                 }
             }
+        }
+
+        private static double CalculateVolatility (CurrencyPair pair) {
+
+            TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
+            if (tickers == null) throw new Exception("Couldn't recalculate predictor volatility for " + pair + " - no tickers available");
+
+            long startTime = tickers.Last().Timestamp - 10800;
+
+            // Calculate the average price
+
+            double sum = 0;
+            int cnt = 0;
+
+            for (int i = tickers.Length - 1; i >= 0; i--) {
+                if (tickers[i].Timestamp < startTime) break;
+                sum += tickers[i].MarketData.PriceLast;
+                cnt++;
+            }
+
+            double avgPrice = sum / cnt;
+
+            // Calculate the stDev
+
+            sum = 0;
+            cnt = 0;
+
+            for (int i = tickers.Length - 1; i >= 0; i--) {
+                if (tickers[i].Timestamp < startTime) break;
+                sum += Math.Abs(avgPrice - tickers[i].MarketData.PriceLast);
+                cnt++;
+            }
+
+            double stDev = sum / cnt;
+
+            // Normalize stDev
+
+            stDev = ((stDev - avgPrice) / avgPrice) * 100;
+
+            return stDev;
         }
 
         static void CancelAllOrders (CurrencyPair pair) {

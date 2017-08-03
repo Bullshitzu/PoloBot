@@ -10,16 +10,12 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class MACD : Predictor {
 
-        public int[] Settings; // = { 150, 900, 60 };
+        public static int TimeEMA = 320;
+        public static int TimeSMA = 649;
+        public static int HistogramValueCount = 30;
 
-        public MACD (CurrencyPair pair)
-            : base(pair) {
-            Settings = new int[] { 1500, 1800, 60 }; // 5 min, 10 min
-        }
-        public MACD (CurrencyPair pair, int shortEma, int longEma)
-            : base(pair) {
-                Settings = new int[] { shortEma, longEma, 60 };
-        }
+        public MACD (CurrencyPair pair) : base(pair) { }
+
         public override void SignResult (ResultSet rs) {
             rs.signature = "M.A.C.D.";
         }
@@ -28,36 +24,35 @@ namespace PoloniexBot.Data.Predictors {
             TickerChangedEventArgs[] tickers = (TickerChangedEventArgs[])dataSet;
             if (tickers == null || tickers.Length == 0) return;
 
-            double emaShort = GetEMA(tickers, Settings[0]);
-            double emaLong = GetEMA(tickers, Settings[1]);
+            double ema = GetEMA(tickers, TimeEMA);
+            double sma = GetSMA(tickers, TimeSMA);
 
-            double macd = emaShort - emaLong;
-            double signal = macd;
+            double macd = ((ema - sma) / sma) * 100;
 
-            if (results != null && results.Count > Settings[2]) {
+            // get the histogram delta (trend)
+
+            double macdTrend = 0;
+            if (results != null && results.Count > HistogramValueCount) {
                 List<double> macdValues = new List<double>();
-                for (int i = 0; i < Settings[2]; i++) {
-                    int index = results.Count - 1 - i;
-                    if (index < 0) break;
+                for (int i = results.Count - 1; i >= 0; i--) {
+
+                    if (i < 0) break;
+                    if (results[i].timestamp < tickers.Last().Timestamp - TimeSMA) break;
+
                     ResultSet.Variable rsTemp;
-                    if (results[index].variables.TryGetValue("macd", out rsTemp)) {
+                    if (results[i].variables.TryGetValue("macd", out rsTemp)) {
                         macdValues.Add(rsTemp.value);
                     }
                 }
-                macdValues.Reverse();
-                signal = Analysis.MovingAverage.ExponentialMovingAverage(macdValues.ToArray());
+                double macdSMA = Analysis.MovingAverage.SimpleMovingAverage(macdValues.ToArray());
+                macdTrend = macd - macdSMA;
             }
 
-            double macdHist = macd - signal;
-            double macdHistAdj = (macdHist / tickers.Last().MarketData.PriceLast) * 100;
-
             ResultSet rs = new ResultSet(tickers.Last().Timestamp);
-            rs.variables.Add("emaShort", new ResultSet.Variable("EMA (" + Settings[0] + ")", emaShort, 8));
-            rs.variables.Add("emaLong", new ResultSet.Variable("EMA (" + Settings[1] + ")", emaLong, 8));
+            rs.variables.Add("emaShort", new ResultSet.Variable("EMA (" + TimeEMA + ")", ema, 8));
+            rs.variables.Add("smaLong", new ResultSet.Variable("SMA (" + TimeSMA + ")", sma, 8));
             rs.variables.Add("macd", new ResultSet.Variable("MACD", macd, 8));
-            rs.variables.Add("signal", new ResultSet.Variable("Signal (" + Settings[2] + ")", signal, 8));
-            rs.variables.Add("macdHistogram", new ResultSet.Variable("Histogram", macdHist, 8));
-            rs.variables.Add("macdHistogramAdjusted", new ResultSet.Variable("Histogram (Adjusted)", macdHistAdj, 8));
+            rs.variables.Add("macdTrend", new ResultSet.Variable("MACD (Trend)", macdTrend, 8));
             
             if (results.Count == 0) SaveResult(rs);
             else SaveResult(rs);
@@ -230,7 +225,7 @@ namespace PoloniexBot.Data.Predictors {
             float width = g.MeasureString(spreadString, fontMedium).Width;
             Utility.DrawingHelper.DrawShadow(g, spreadString, fontMedium, colorBaseBlue, offsetX + sizeX - width - 10, rect.Y + 10);
 
-            string settingsString = "Setup: " + Settings[0] + " / " + Settings[1] + " / " + Settings[2];
+            string settingsString = "Setup: " + TimeEMA + " / " + TimeSMA + " / " + HistogramValueCount;
             width = g.MeasureString(settingsString, fontMedium).Width;
             Utility.DrawingHelper.DrawShadow(g, settingsString, fontMedium, colorBaseBlue, offsetX + sizeX - width - 10, rect.Y - 5 + sizeY - (fontMedium.Size + 7));
 

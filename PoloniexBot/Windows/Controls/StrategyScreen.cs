@@ -31,7 +31,7 @@ namespace PoloniexBot.Windows.Controls {
             if (data != null) data = null;
         }
 
-        private string[] drawVariables = { "meanRev" };
+        public static string[] drawVariables = { };
 
         // ---------------------------------------
         // Drawing
@@ -60,11 +60,11 @@ namespace PoloniexBot.Windows.Controls {
             // 	X X X X
 
             int index = 0;
-            for (int x = 0; x < 4; x++) {
+            for (int x = 0; x < 5; x++) {
                 for (int y = 0; y < 4; y++) {
                     if (index >= data.Length) return;
 
-                    float xOffset = 5 + (((Width - 10) / 4) * x);
+                    float xOffset = 5 + (((Width - 10) / 5) * x);
                     float yOffset = 5 + (((Height - 10) / 4) * y);
 
                     DrawField(g, xOffset, yOffset, data[index].Key, data[index].Value);

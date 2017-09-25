@@ -8,9 +8,8 @@ using PoloniexBot.Trading.Rules;
 
 namespace PoloniexBot.Trading.Strategies {
     class PriceTrend : Strategy {
-
         public PriceTrend (CurrencyPair pair) : base(pair) {
-            Windows.Controls.StrategyScreen.drawVariables = new string[] { "meanRev", "macdTrend" };
+            Windows.Controls.StrategyScreen.drawVariables = new string[] { "priceDelta1", "priceDelta2" };
         }
 
         // ------------------------------
@@ -28,21 +27,19 @@ namespace PoloniexBot.Trading.Strategies {
         TradeRule ruleStopLoss;
 
         TradeRule rulePriceDelta;
-        TradeRule ruleMeanRev;
 
         TradeRule[] allRules = { };
-
-        RuleGlobalDrop ruleGlobalTrend;
 
         // ------------------------------
 
         private double openPosition = 0;
 
         private Data.Predictors.PriceExtremes predictorExtremes;
-        private Data.Predictors.MeanReversion predictorMeanRev;
         private Data.Predictors.PriceDelta predictorPriceDelta;
 
         public override void Setup (bool simulated = false) {
+
+            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, null);
 
             // ----------------------------------
 
@@ -56,24 +53,14 @@ namespace PoloniexBot.Trading.Strategies {
             openPosition = openPos;
 
             predictorExtremes = new Data.Predictors.PriceExtremes(pair);
-            predictorMeanRev = new Data.Predictors.MeanReversion(pair);
             predictorPriceDelta = new Data.Predictors.PriceDelta(pair);
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
 
             predictorExtremes.Update(tickers);
+            predictorPriceDelta.Recalculate(tickers);
 
-            List<TickerChangedEventArgs> tickerList = new List<TickerChangedEventArgs>();
-
-            for (int i = 0; i < tickers.Length; i++) {
-                tickerList.Add(tickers[i]);
-
-                predictorMeanRev.Recalculate(tickerList.ToArray());
-                predictorPriceDelta.Recalculate(tickerList.ToArray());
-
-                if (i % 100 == 0) Utility.ThreadManager.ReportAlive("PriceTrend");
-            }
         }
         private void SetupRules () {
             ruleDelayAllTrades = new RuleDelayAllTrade();
@@ -91,9 +78,6 @@ namespace PoloniexBot.Trading.Strategies {
             ruleStopLoss = new RuleStopLoss();
 
             rulePriceDelta = new RulePriceDelta();
-            ruleMeanRev = new RuleMeanRev();
-
-            ruleGlobalTrend = new RuleGlobalDrop("meanRev");
 
             // order doesn't matter
             allRules = new TradeRule[] { 
@@ -102,7 +86,7 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinBase, ruleMinBasePost, // minimum base amount
                 ruleMinQuote, ruleMinQuotePost, // minimum quote amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
-                rulePriceDelta, ruleMeanRev }; // buy rules
+                rulePriceDelta }; // buy rules
         }
 
         public override void Reset () {
@@ -112,7 +96,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             predictorExtremes = null;
             predictorPriceDelta = null;
-            predictorMeanRev = null;
 
             Setup(true);
         }
@@ -128,7 +111,6 @@ namespace PoloniexBot.Trading.Strategies {
             if (tickers == null) throw new Exception("Data store returned NULL tickers for pair " + pair);
 
             predictorExtremes.Update(tickers);
-            predictorMeanRev.Recalculate(tickers);
             predictorPriceDelta.Recalculate(tickers);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
@@ -148,22 +130,19 @@ namespace PoloniexBot.Trading.Strategies {
             double postBaseAmount = currQuoteAmount * buyPrice;
             double postQuoteAmount = currTradableBaseAmount / sellPrice;
 
-            double meanRev = 0;
+            double delta1 = 0;
+            double delta2 = 0;
+            double delta3 = 0;
             double minPrice = 0;
             double maxPrice = 0;
-            
-            double priceDelta1 = 0;
-            double priceDelta2 = 0;
-            double priceDelta3 = 0;
 
             Data.ResultSet.Variable tempVar;
-            if (predictorMeanRev.GetLastResult().variables.TryGetValue("score", out tempVar)) meanRev = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("min", out tempVar)) minPrice = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("max", out tempVar)) maxPrice = tempVar.value;
-            if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta1", out tempVar)) priceDelta1 = tempVar.value;
-            if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta2", out tempVar)) priceDelta2 = tempVar.value;
-            if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta3", out tempVar)) priceDelta3 = tempVar.value;
-            
+            if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta1", out tempVar)) delta1 = tempVar.value;
+            if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta2", out tempVar)) delta2 = tempVar.value;
+            if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta3", out tempVar)) delta3 = tempVar.value;
+
             // -------------------------------
             // Update the trade history screen
             // -------------------------------
@@ -194,24 +173,15 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("postQuoteAmount", postQuoteAmount);
             ruleVariables.Add("postBaseAmount", postBaseAmount);
 
-            ruleVariables.Add("meanRev", meanRev);
-
             ruleVariables.Add("minPrice", minPrice);
             ruleVariables.Add("maxPrice", maxPrice);
 
             ruleVariables.Add("minGUI", lastPrice / minPrice);
             ruleVariables.Add("maxGUI", maxPrice / lastPrice);
 
-            ruleVariables.Add("priceDelta1", priceDelta1);
-            ruleVariables.Add("priceDelta2", priceDelta2);
-            ruleVariables.Add("priceDelta3", priceDelta3);
-            
-            // -----------------------
-            // Recalculate global rules
-            // -----------------------
-
-            ruleGlobalTrend.Recalculate(ruleVariables, pair);
-            ruleVariables.Add("mRevGlobal", RuleGlobalDrop.GetGlobalTrend());
+            ruleVariables.Add("priceDelta1", delta1);
+            ruleVariables.Add("priceDelta2", delta2);
+            ruleVariables.Add("priceDelta3", delta3);
 
             // -----------------------
             // Recalculate all the rules
@@ -253,15 +223,11 @@ namespace PoloniexBot.Trading.Strategies {
                     if (ruleMinQuote.Result == RuleResult.BlockSell) {
                         // if it's blocking sell that means we don't own quote, so go ahead with buying
 
-                        if (ruleGlobalTrend.Result == RuleResult.None) {
-                            // global trend isn't dropping
+                        if (rulePriceDelta.currentResult == RuleResult.Buy) {
+                            // price has been consistently going up
 
-                            if (rulePriceDelta.currentResult == RuleResult.Buy) { //  && ruleMeanRev.currentResult == RuleResult.Buy
-                                // Price has stopped falling and is below average
-
-                                Buy(sellPrice, postQuoteAmount);
-                                return;
-                            }
+                            Buy(sellPrice, postQuoteAmount);
+                            return;
                         }
                     }
                 }
@@ -303,8 +269,6 @@ namespace PoloniexBot.Trading.Strategies {
         }
 
         private void Buy (double sellPrice, double quoteAmount) {
-            
-
 
             // -----------------------------
             Console.WriteLine("Attempting Buy - " + pair);
@@ -361,5 +325,7 @@ namespace PoloniexBot.Trading.Strategies {
                 Console.WriteLine("Error making sale: " + e.Message);
             }
         }
+
+        
     }
 }

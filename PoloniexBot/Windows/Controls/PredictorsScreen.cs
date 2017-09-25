@@ -21,23 +21,6 @@ namespace PoloniexBot.Windows.Controls {
 
             g.Clear(BackColor);
 
-            if (selectedPair == null) return;
-            Trading.TPManager tpmanager = Trading.Manager.GetTPManager(selectedPair);
-            if (tpmanager == null) return;
-
-            Data.Predictor[] predictors = tpmanager.GetPredictors();
-            if (predictors == null) return;
-
-            for (int i = 0; i < predictors.Length; i++) {
-                if (predictors[i] == null) continue;
-
-                try {
-                    predictors[i].DrawPredictor(g, Data.Predictor.drawTimeframe, new RectangleF(0, 0, Size.Width, Size.Height));
-                }
-                catch (Exception e) {
-                    Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                }
-            }
         }
     }
 }

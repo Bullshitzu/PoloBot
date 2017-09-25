@@ -9,7 +9,7 @@ namespace Utility {
     public static class TradeTracker {
 
         const string DirectoryName = "Logs";
-        const string Filename = "openPositions.data";
+        const string OpenPositionsFilename = "openPositions.data";
 
         static TradeTracker () {
             Trades = new List<TradeData>();
@@ -161,12 +161,12 @@ namespace Utility {
                 lines.AddRange(Trades[i].Serialize());
             }
 
-            FileManager.SaveFile(DirectoryName + "/" + Filename, lines.ToArray());
+            FileManager.SaveFile(DirectoryName + "/" + OpenPositionsFilename, lines.ToArray());
         }
         public static void LoadData () {
             if (PoloniexBot.ClientManager.Simulate) return;
 
-            string[] lines = FileManager.ReadFile(DirectoryName + "/" + Filename);
+            string[] lines = FileManager.ReadFile(DirectoryName + "/" + OpenPositionsFilename);
             if(lines == null) return;
 
             if (Trades == null) Trades = new List<TradeData>();

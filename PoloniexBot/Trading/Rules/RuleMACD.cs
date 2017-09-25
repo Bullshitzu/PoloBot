@@ -7,7 +7,19 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleMACD : TradeRule {
 
-        public static double MacdTrigger = -0.09;
+        public static double MacdTrigger = 0.1;
+        private double localTrigger = 0.1;
+
+        public RuleMACD () {
+            localTrigger = MacdTrigger;
+        }
+        public RuleMACD (double trigger) {
+            localTrigger = trigger;
+        }
+
+        public override void SetTrigger (params double[] values) {
+            localTrigger = values[0];
+        }
 
         public override void Recalculate (Dictionary<string, double> values) {
 
@@ -15,11 +27,11 @@ namespace PoloniexBot.Trading.Rules {
 
             if (!values.TryGetValue("macd", out macd)) throw new VariableNotIncludedException();
 
-            if (macd > MacdTrigger) {
+            if (macd > localTrigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }
-            if (macd < MacdTrigger) {
+            if (macd < -localTrigger) {
                 currentResult = RuleResult.Sell;
                 return;
             }

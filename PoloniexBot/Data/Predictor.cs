@@ -19,7 +19,12 @@ namespace PoloniexBot.Data {
             this.results = new List<ResultSet>();
         }
 
-        public virtual void Dispose () { }
+        public virtual void Dispose () {
+            if (results != null) {
+                results.Clear();
+                results = null;
+            }
+        }
 
         public ResultSet GetLastResult () {
             if (results == null || results.Count == 0) return null;
@@ -32,51 +37,10 @@ namespace PoloniexBot.Data {
         public void SaveResult (ResultSet rs) {
             SignResult(rs);
             results.Add(rs);
+            while (results.Count > 1000) results.RemoveAt(0);
         }
 
         public abstract void SignResult (ResultSet rs);
 
-        public virtual void DrawPredictor (Graphics g, long timePeriod, RectangleF rect) {
-
-            System.Drawing.Drawing2D.SmoothingMode oldSmoothingMode = g.SmoothingMode;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-
-            string line = "Predictor Display Not Implemented";
-            using (Font font = new System.Drawing.Font("Impact", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)))) {
-
-                SizeF size = g.MeasureString(line, font);
-
-                PointF point = new PointF(rect.Width / 2 - (size.Width / 2), rect.Height / 2 - (size.Height / 2));
-                point = new PointF(point.X + rect.X, point.Y + rect.Y);
-
-                using (Brush brush = new SolidBrush(Color.Red)) {
-                    g.DrawString(line, font, brush, point);
-                }
-            }
-
-            g.SmoothingMode = oldSmoothingMode;
-        }
-
-        protected void DrawNoData (Graphics g, RectangleF rect) {
-
-            System.Drawing.Drawing2D.SmoothingMode oldSmoothingMode = g.SmoothingMode;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-
-            string line = "No Data";
-            using (Font font = new System.Drawing.Font("Impact", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)))) {
-
-                SizeF size = g.MeasureString(line, font);
-
-                PointF point = new PointF(rect.Width / 2 - (size.Width / 2), rect.Height / 2 - (size.Height / 2));
-                point = new PointF(point.X + rect.X, point.Y + rect.Y);
-
-                using (Brush brush = new SolidBrush(Color.Red)) {
-                    g.DrawString(line, font, brush, point);
-                }
-            }
-
-            g.SmoothingMode = oldSmoothingMode;
-
-        }
     }
 }

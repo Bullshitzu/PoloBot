@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleMinimumSellPrice : TradeRule {
 
-        public const double ProfitFactor = 1.025; // +2% minimum profit
+        public const double ProfitFactor = 1.0175; // +1.5% minimum profit
 
         public override void Recalculate (Dictionary<string, double> values) {
 

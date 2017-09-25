@@ -3,21 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PoloniexAPI;
 using PoloniexBot.Trading.Rules;
+using PoloniexAPI;
 
 namespace PoloniexBot.Trading.Strategies {
-    class MeanRevADX : Strategy {
+    class MeanRev : Strategy {
 
-        public MeanRevADX (CurrencyPair pair) : base(pair) {
-            Windows.Controls.StrategyScreen.drawVariables = new string[] { "meanRev", "adx" };
+        public MeanRev (CurrencyPair pair) : base(pair) {
+            Windows.Controls.StrategyScreen.drawVariables = new string[] { "meanRev" };
             Windows.Controls.StrategyScreen.minVariables = new double[] {
-                RuleMeanRev.BuyTrigger - 5,
-                RuleADX.Trigger - 50,
+                RuleMeanRev.BuyTrigger - 5
             };
             Windows.Controls.StrategyScreen.maxVariables = new double[] {
-                RuleMeanRev.BuyTrigger + 5,
-                RuleADX.Trigger + 50,
+                RuleMeanRev.BuyTrigger + 5
             };
         }
 
@@ -36,7 +34,6 @@ namespace PoloniexBot.Trading.Strategies {
         TradeRule ruleStopLoss;
 
         TradeRule ruleMeanRev;
-        TradeRule ruleADX;
 
         TradeRule[] allRules = { };
 
@@ -45,9 +42,7 @@ namespace PoloniexBot.Trading.Strategies {
         private double openPosition = 0;
 
         private Data.Predictors.PriceExtremes predictorExtremes;
-
         private Data.Predictors.MeanReversion predictorMeanRev;
-        private Data.Predictors.ADX predictorADX;
 
         // ------------------------------
 
@@ -58,7 +53,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             predictorExtremes = null;
             predictorMeanRev = null;
-            predictorADX = null;
 
             Setup(true);
         }
@@ -71,7 +65,7 @@ namespace PoloniexBot.Trading.Strategies {
 
             double optTimeframe = Data.Predictors.MeanReversion.drawTimeframe;
             double optTrigger = RuleMeanRev.BuyTrigger;
-            
+
             try {
                 Data.VariableAnalysis.OptimizedPairData opd = Data.VariableAnalysis.GetPairData(pair);
                 optTimeframe = opd.MeanRevTimeframe;
@@ -80,8 +74,6 @@ namespace PoloniexBot.Trading.Strategies {
             catch (Exception e) {
                 CLI.Manager.PrintWarning("No optimized pair data for " + pair + "!");
             }
-
-            optTrigger *= 0.7;
 
             // ----------------------------------
 
@@ -96,7 +88,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             predictorExtremes = new Data.Predictors.PriceExtremes(pair);
             predictorMeanRev = new Data.Predictors.MeanReversion(pair, (int)optTimeframe);
-            predictorADX = new Data.Predictors.ADX(pair);
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
@@ -109,13 +100,12 @@ namespace PoloniexBot.Trading.Strategies {
                 tickerList.Add(tickers[i]);
 
                 predictorMeanRev.Recalculate(tickerList.ToArray());
-                predictorADX.Recalculate(tickerList.ToArray());
 
                 if (i % 100 == 0) Utility.ThreadManager.ReportAlive("LowAlts");
             }
 
         }
-        private void SetupRules (double mRevTrigger) {
+        private void SetupRules (double trigger) {
             ruleDelayAllTrades = new RuleDelayAllTrade();
             ruleDelayBuy = new RuleDelayBuy();
 
@@ -130,8 +120,7 @@ namespace PoloniexBot.Trading.Strategies {
             ruleSellBand = new RuleSellBand();
             ruleStopLoss = new RuleStopLoss();
 
-            ruleMeanRev = new RuleMeanRev(mRevTrigger);
-            ruleADX = new RuleADX();
+            ruleMeanRev = new RuleMeanRev(trigger);
 
             // order doesn't matter
             allRules = new TradeRule[] { 
@@ -140,11 +129,11 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinBase, ruleMinBasePost, // minimum base amount
                 ruleMinQuote, ruleMinQuotePost, // minimum quote amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
-                ruleMeanRev, ruleADX }; // buy rules
+                ruleMeanRev }; // buy rules
         }
 
         public override void UpdatePredictors () {
-            
+
             TickerChangedEventArgs lastTicker = Data.Store.GetLastTicker(pair);
             double lastPrice = lastTicker.MarketData.PriceLast;
             double buyPrice = lastTicker.MarketData.OrderTopBuy;
@@ -155,7 +144,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             predictorExtremes.Update(tickers);
             predictorMeanRev.Recalculate(tickers);
-            predictorADX.Recalculate(tickers);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
         }
@@ -176,9 +164,9 @@ namespace PoloniexBot.Trading.Strategies {
             double postQuoteAmount = currTradableBaseAmount / sellPrice;
 
             double meanRev = 0;
+
             double minPrice = 0;
             double maxPrice = 0;
-            double adx = 0;
 
             // --------------------------
 
@@ -186,7 +174,6 @@ namespace PoloniexBot.Trading.Strategies {
             if (predictorMeanRev.GetLastResult().variables.TryGetValue("score", out tempVar)) meanRev = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("min", out tempVar)) minPrice = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("max", out tempVar)) maxPrice = tempVar.value;
-            if (predictorADX.GetLastResult().variables.TryGetValue("adx", out tempVar)) adx = tempVar.value;
 
             // -------------------------------
             // Update the trade history screen
@@ -219,7 +206,6 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("postBaseAmount", postBaseAmount);
 
             ruleVariables.Add("meanRev", meanRev);
-            ruleVariables.Add("adx", adx);
 
             ruleVariables.Add("minPrice", minPrice);
             ruleVariables.Add("maxPrice", maxPrice);
@@ -267,7 +253,7 @@ namespace PoloniexBot.Trading.Strategies {
                     if (ruleMinQuote.Result == RuleResult.BlockSell) {
                         // if it's blocking sell that means we don't own quote, so go ahead with buying
 
-                        if (ruleADX.currentResult == RuleResult.Buy && ruleMeanRev.currentResult == RuleResult.Buy) {
+                        if (ruleMeanRev.currentResult == RuleResult.Buy) {
                             // price has stopped falling and is below average
 
                             Buy(sellPrice, postQuoteAmount);
@@ -367,5 +353,6 @@ namespace PoloniexBot.Trading.Strategies {
                 Console.WriteLine("Error making sale: " + e.Message);
             }
         }
+
     }
 }

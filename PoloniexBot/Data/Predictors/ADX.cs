@@ -9,9 +9,12 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class ADX : Predictor {
 
-        const int Period = 60;
+        private int localPeriod = 60;
 
-        public ADX (CurrencyPair pair) : base(pair) { }
+        public ADX (CurrencyPair pair, int period = 60) : base(pair) {
+            localPeriod = period;
+        }
+
         public override void SignResult (ResultSet rs) {
             rs.signature = "A.D.X.";
         }
@@ -40,7 +43,7 @@ namespace PoloniexBot.Data.Predictors {
             double atr = Analysis.Other.AverageTrueRange(atrVars[0], atrVars[1], atrVars[2]);
 
             ResultSet rs = new ResultSet(tickers.Last().Timestamp);
-            SaveResult(rs); 
+            SaveResult(rs);
             // note: it needs to be saved immediately since it's used by EMA's
             // (doesn't matter for adding vars, it's a reference...)
 
@@ -54,7 +57,7 @@ namespace PoloniexBot.Data.Predictors {
             double diNeg = 0;
 
             if (results.Count > 0) {
-                long startTime = tickers.Last().Timestamp - (Period * 14);
+                long startTime = tickers.Last().Timestamp - (localPeriod * 14);
                 // note: wilders recommends 14 periods but i like round numbers
 
                 List<double> dmPosVars = new List<double>();
@@ -79,6 +82,7 @@ namespace PoloniexBot.Data.Predictors {
 
                 diPos = Analysis.MovingAverage.ExponentialMovingAverageWilders(dmPosVars.ToArray()) / atr14;
                 diNeg = Analysis.MovingAverage.ExponentialMovingAverageWilders(dmNegVars.ToArray()) / atr14;
+
             }
 
             // -----------------
@@ -94,7 +98,7 @@ namespace PoloniexBot.Data.Predictors {
             double adx = 100;
 
             if (results.Count > 0) {
-                long startTime = tickers.Last().Timestamp - Period;
+                long startTime = tickers.Last().Timestamp - localPeriod;
 
                 List<double> DXVars = new List<double>();
 
@@ -113,13 +117,13 @@ namespace PoloniexBot.Data.Predictors {
         }
 
         private double GetUpMove (TickerChangedEventArgs[] tickers) {
-            
-            long startTime1 = tickers.Last().Timestamp - Period;
-            long startTime2 = startTime1 - Period;
+
+            long startTime1 = tickers.Last().Timestamp - localPeriod;
+            long startTime2 = startTime1 - localPeriod;
 
             double todayHigh = tickers.Last().MarketData.PriceLast;
             double yestHigh = tickers.Last().MarketData.PriceLast;
-            
+
             for (int i = tickers.Length - 1; i >= 0; i--) {
                 if (tickers[i].Timestamp < startTime2) break;
                 if (tickers[i].Timestamp < startTime1) {
@@ -134,13 +138,13 @@ namespace PoloniexBot.Data.Predictors {
         }
         private double GetDownMove (TickerChangedEventArgs[] tickers) {
 
-            long startTime1 = tickers.Last().Timestamp - Period;
-            long startTime2 = startTime1 - Period;
+            long startTime1 = tickers.Last().Timestamp - localPeriod;
+            long startTime2 = startTime1 - localPeriod;
 
             double todayLow = tickers.Last().MarketData.PriceLast;
             double yestLow = tickers.Last().MarketData.PriceLast;
-            
-            for (int i = tickers.Length - 1; i >= 0; i--) {    
+
+            for (int i = tickers.Length - 1; i >= 0; i--) {
                 if (tickers[i].Timestamp < startTime2) break;
                 if (tickers[i].Timestamp < startTime1) {
                     if (tickers[i].MarketData.PriceLast < yestLow) yestLow = tickers[i].MarketData.PriceLast;
@@ -155,7 +159,7 @@ namespace PoloniexBot.Data.Predictors {
 
         private double[] GetATRVars (TickerChangedEventArgs[] tickers) {
 
-            long startTime = tickers.Last().Timestamp - Period;
+            long startTime = tickers.Last().Timestamp - localPeriod;
 
             double high = tickers.Last().MarketData.PriceLast;
             double low = tickers.Last().MarketData.PriceLast;
@@ -169,148 +173,6 @@ namespace PoloniexBot.Data.Predictors {
             }
 
             return new double[] { high, low, previousClose };
-        }
-
-        // -------------------
-        // Drawing Variables
-        // -------------------
-
-        private Color colorADX = Color.FromArgb(255, 128, 128);
-
-        private Color colorGray = Color.FromArgb(128, 128, 128, 128);
-        private Color colorBaseBlue = Color.FromArgb(107, 144, 148);
-
-        private Font fontSmall = new System.Drawing.Font("Calibri Bold Caps", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-        private Font fontMedium = new System.Drawing.Font("Calibri Bold Caps", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-        private Font fontLarge = new System.Drawing.Font("Calibri Bold Caps", 15F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-
-        public override void DrawPredictor (System.Drawing.Graphics g, long timePeriod, System.Drawing.RectangleF rect) {
-
-            #region Get And Verify Result Data
-            if (results == null || results.Count == 0) {
-                Console.WriteLine("RESULTS = NULL or EMPTY");
-                DrawNoData(g, rect);
-                return;
-            }
-
-            long origTimePeriod = timePeriod;
-
-            long endTime = results.Last().timestamp;
-            long startTime = endTime - timePeriod;
-
-            int startIndex = 0;
-            for (int i = 0; i < results.Count; i++) {
-                if (results[i].timestamp > startTime) break;
-                startIndex = i;
-            }
-            if (startIndex == results.Count - 1) {
-                DrawNoData(g, rect);
-                return;
-            }
-            startTime = results[startIndex].timestamp;
-            timePeriod = endTime - startTime;
-            #endregion
-
-            float sizeY = rect.Height - 10;
-            float sizeX = rect.Width - 10;
-
-            float gridSize = sizeY / 6;
-            float rangeYSize = gridSize * 4;
-
-            float offsetY = rect.Y + 5 + gridSize;
-            float offsetX = rect.X + 5;
-
-            Utility.DrawingHelper.DrawGrid(g, new PointF(offsetX, rect.Y + 5), new PointF(offsetX + sizeX, rect.Y + 5 + sizeY), (int)(timePeriod / 60), 6);
-
-            double minValue = 0;
-            double maxValue = 100;
-
-            System.Drawing.Drawing2D.SmoothingMode oldSmoothingMode = g.SmoothingMode;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-
-            PointF lastPoint = new PointF(-5, 0);
-
-            double minMaxRange = maxValue - minValue;
-
-            Utility.DrawingHelper.DrawLine(g, new PointF(offsetX, rect.Y + 5 + (sizeY * 0.5f)), new PointF(offsetX + sizeX, rect.Y + 5 + (sizeY * 0.5f)), colorBaseBlue, 2);
-
-            for (int i = startIndex; i < results.Count; i++) {
-
-                #region Find PosX
-                float posX = (results[i].timestamp - startTime) / (float)timePeriod;
-
-                if (i == 0) posX = offsetX;
-                else if (i + 1 == results.Count) posX = offsetX + sizeX;
-                else posX = (posX * sizeX) + offsetX;
-
-                if (float.IsInfinity(posX)) {
-                    Console.WriteLine("ERROR - " + timePeriod + " - " + (float)timePeriod);
-                }
-                #endregion
-
-                #region Draw A.D.X.
-                ResultSet.Variable var;
-                if (results[i].variables.TryGetValue("adx", out var)) {
-
-                    float posY = (float)((var.value - minValue) / minMaxRange);
-                    posY = 1 - posY;
-                    posY = (posY * rangeYSize) + offsetY;
-
-                    PointF point = new PointF(posX, posY);
-                    if (lastPoint.X < 0) lastPoint = point;
-
-                    if (posX > offsetX) Utility.DrawingHelper.DrawLine(g, lastPoint, point, colorADX, 2);
-
-                    lastPoint = point;
-                }
-                #endregion
-
-            }
-
-            Utility.DrawingHelper.DrawBorders(g, new PointF(offsetX, rect.Y + 5), new PointF(offsetX + sizeX, rect.Y + 5 + sizeY));
-
-
-            #region Draw Text Labels
-
-            int minPeriod = (int)origTimePeriod / 60;
-            Utility.DrawingHelper.DrawShadow(g, "A.D.X.", fontLarge, colorBaseBlue, offsetX + 10, rect.Y + 10);
-            Utility.DrawingHelper.DrawShadow(g, "Graph: " + minPeriod + " Minutes", fontMedium, colorBaseBlue, offsetX + 10, rect.Y - 5 + sizeY - ((fontMedium.Size + 7) * 2));
-            Utility.DrawingHelper.DrawShadow(g, "Period: " + Period + " Seconds", fontMedium, colorBaseBlue, offsetX + 10, rect.Y - 5 + sizeY - ((fontMedium.Size + 7) * 1));
-
-            float width = 0;
-
-            string pairString = pair.BaseCurrency + " / " + pair.QuoteCurrency;
-            width = g.MeasureString(pairString, fontLarge).Width;
-            Utility.DrawingHelper.DrawShadow(g, pairString, fontLarge, colorBaseBlue, offsetX + (sizeX / 2) - (width / 2), rect.Y + 10);
-            #endregion
-
-            #region Draw Legend
-            for (int i = 0; i < 1; i++) {
-
-                string currText;
-                Color currColor;
-
-                switch (i) {
-                    case 0:
-                        currText = "A.D.X.:";
-                        currColor = colorADX;
-                        break;
-                    default:
-                        currText = "ERR";
-                        currColor = Color.White;
-                        break;
-                }
-
-                width = g.MeasureString(currText, fontSmall).Width;
-                float legendY = rect.Y + fontLarge.Height + 10 + (fontSmall.Height * i);
-
-                Utility.DrawingHelper.DrawShadow(g, currText, fontSmall, colorBaseBlue, offsetX + 10, legendY);
-                Utility.DrawingHelper.DrawShadow(g, new RectangleF(offsetX + 10 + width, legendY + 5, fontSmall.Size, fontSmall.Size), currColor);
-            }
-            #endregion
-
-            g.SmoothingMode = oldSmoothingMode;
-
         }
     }
 }

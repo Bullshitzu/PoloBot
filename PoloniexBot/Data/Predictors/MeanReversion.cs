@@ -10,7 +10,9 @@ using System.Drawing.Drawing2D;
 namespace PoloniexBot.Data.Predictors {
     class MeanReversion : Predictor {
 
-        public MeanReversion (CurrencyPair pair) : base(pair) { }
+        public MeanReversion (CurrencyPair pair, int period = 12600) : base(pair) {
+            localPeriod = period;
+        }
         public override void SignResult (ResultSet rs) {
             rs.signature = "Mean Rev.";
         }
@@ -19,7 +21,7 @@ namespace PoloniexBot.Data.Predictors {
         // Setup Vars
         // -------------------
 
-        public static long MeanTimePeriod = 12600; // 3 hours
+        private long localPeriod = 12600; // 3.5 hours
 
         // -------------------
 
@@ -28,7 +30,7 @@ namespace PoloniexBot.Data.Predictors {
 
             ResultSet rs = new ResultSet(tickers.Last().Timestamp);
 
-            double meanPrice = CalculateMeanPrice(tickers, MeanTimePeriod);
+            double meanPrice = CalculateMeanPrice(tickers, localPeriod);
             double currPrice = tickers.Last().MarketData.OrderTopBuy;
 
             double ratio = ((meanPrice - currPrice) / meanPrice) * 100;
@@ -36,8 +38,8 @@ namespace PoloniexBot.Data.Predictors {
 
             rs.variables.Add("price", new ResultSet.Variable("Price", currPrice, 8));
             rs.variables.Add("score", new ResultSet.Variable("Score", ratio, 4));
+
             SaveResult(rs);
-            
         }
 
         private double CalculateMeanPrice (TickerChangedEventArgs[] tickers, long timePeriod) {
@@ -60,24 +62,6 @@ namespace PoloniexBot.Data.Predictors {
 
             return sum / sumCount;
         }
-
-        // -------------------
-        // Drawing Variables
-        // -------------------
-
-        private Color colorGray = Color.FromArgb(128, 128, 128, 128);
-        private Color colorBaseBlue = Color.FromArgb(107, 144, 148);
-
-        private Font fontSmall = new System.Drawing.Font("Calibri Bold Caps", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-        private Font fontMedium = new System.Drawing.Font("Calibri Bold Caps", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-        private Font fontLarge = new System.Drawing.Font("Calibri Bold Caps", 15F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-
-        // -------------------
-
-        public override void DrawPredictor (Graphics g, long timePeriod, RectangleF rect) {
-            // todo: this
-        }
-
 
     }
 }

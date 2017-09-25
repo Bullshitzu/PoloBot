@@ -24,5 +24,9 @@ namespace PoloniexBot.Trading.Rules {
         internal RuleResult currentResult;
         public RuleResult Result { get { return currentResult; } }
         public abstract void Recalculate (Dictionary<string, double> values);
+        public virtual void SetTrigger (params double[] values) {
+            // note: most rules don't need to do anything
+        }
+
     }
 }

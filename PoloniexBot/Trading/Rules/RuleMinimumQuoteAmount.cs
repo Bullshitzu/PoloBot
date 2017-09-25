@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleMinimumQuoteAmount : TradeRule {
 
-        private const double MinimumTradeAmount = 0.0001;
+        public static double MinimumTradeAmount = 0.0001;
 
         public override void Recalculate (Dictionary<string, double> values) {
             

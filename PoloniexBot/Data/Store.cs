@@ -12,7 +12,7 @@ namespace PoloniexBot {
     namespace Data {
         public static class Store {
 
-            public const int TickerStoreTime = 21600; // 6 hours
+            public const int TickerStoreTime = 21610; // 6 hours + 10 seconds
 
             public static void ClearAllData () {
                 if (marketData != null) marketData.Clear();
@@ -60,7 +60,16 @@ namespace PoloniexBot {
             }
             public static TickerChangedEventArgs GetLastTicker (CurrencyPair currencyPair) {
                 TickerChangedEventArgs[] tickers = GetTickerData(currencyPair);
-                if (tickers == null) return null;
+                if (tickers == null) {
+                    if (marketData == null) return null;
+
+                    IMarketData tempMarketData;
+                    if (marketData.TryGetValue(currencyPair, out tempMarketData)) {
+                        return new TickerChangedEventArgs(currencyPair, (MarketData)tempMarketData);
+                    }
+                    
+                    return null;
+                }
                 return tickers.Last();
             }
 
@@ -69,13 +78,13 @@ namespace PoloniexBot {
 
                 if (allowUpdatePairs == null) return;
                 if (!allowUpdatePairs.Contains(ticker.CurrencyPair)) return;
-                int deleteTime = (int)DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - TickerStoreTime;
+                long deleteTime = ticker.Timestamp - TickerStoreTime;
                 lock (tickerData) {
                     for (int i = 0; i < tickerData.Count; i++) {
                         if (tickerData[i] == null) continue;
                         if (tickerData[i].Count == 0) continue;
                         if (tickerData[i][0].CurrencyPair == ticker.CurrencyPair) {
-                            // while (tickerData[i][0].Timestamp < deleteTime) tickerData[i].RemoveAt(0);
+                            while (tickerData[i][0].Timestamp < deleteTime) tickerData[i].RemoveAt(0);
                             tickerData[i].Add(ticker);
                             Trading.Manager.NotifyTickerUpdate(ticker.CurrencyPair);
                             return;
@@ -127,67 +136,21 @@ namespace PoloniexBot {
                     allowUpdatePairs.Add(pair);
                 }
             }
-            public static void PullTickerHistory (CurrencyPair pair) {
-                PullTickerHistory(pair, 6);
+            public static bool PullTickerHistory (CurrencyPair pair) {
+                return PullTickerHistory(pair, 6);
             }
-            public static void PullTickerHistory (CurrencyPair pair, int hours) {
-                if (!AllowTickerUpdate) return;
+            public static bool PullTickerHistory (CurrencyPair pair, int hours) {
 
-                if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
-                if (allowUpdatePairs == null) allowUpdatePairs = new List<CurrencyPair>();
+                long endTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+                long startTime = endTime - (hours * 3600);
 
-                // pull last trades
+                return PullTickerHistory(pair, startTime, endTime);
 
-                long currTime = DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-                long startTime = currTime - (hours * 3600);
-
-                List<PoloniexAPI.MarketTools.ITrade> trades = new List<ITrade>();
-
-                while (true) {
-                    try {
-                        List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, (int)startTime, (int)currTime);
-                        if (temp == null) throw new Exception("WebApiCustom returned NULL tickers");
-
-                        Console.WriteLine("Pulled " + temp.Count + " tickers!");
-
-                        trades.AddRange(temp);
-
-                        if (temp.Count < 300) break;
-
-                        currTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(temp.Last().Time);
-
-                        ThreadManager.ReportAlive("Data.Store");
-                        Thread.Sleep(1000);
-                    }
-                    catch (Exception e) {
-                        Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                        Thread.Sleep(3000);
-                    }
-                }
-
-                // convert into fake tickers
-
-                TickerChangedEventArgs[] fakeTickers = new TickerChangedEventArgs[trades.Count];
-                for (int j = 0; j < trades.Count; j++) {
-
-                    MarketData md = new MarketData(trades[j].PricePerCoin);
-
-                    TickerChangedEventArgs ticker = new TickerChangedEventArgs(pair, md);
-                    ticker.Timestamp = DateTimeHelper.DateTimeToUnixTimestamp(trades[j].Time);
-
-                    fakeTickers[j] = ticker;
-                }
-
-                // dump them into ticker data 
-
-                TSList<TickerChangedEventArgs> tickerList = new TSList<TickerChangedEventArgs>(fakeTickers);
-                tickerList.Sort();
-
-                tickerData.Add(tickerList);
-                allowUpdatePairs.Add(pair);
             }
-            public static void PullTickerHistory (CurrencyPair pair, long startTimestamp, long endTimestamp) {
-                if (!AllowTickerUpdate) return;
+            public static bool PullTickerHistory (CurrencyPair pair, long startTimestamp, long endTimestamp) {
+                if (!AllowTickerUpdate) return false;
+
+                Console.WriteLine("Pulling ticker history for " + pair);
 
                 if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
                 if (allowUpdatePairs == null) allowUpdatePairs = new List<CurrencyPair>();
@@ -195,26 +158,34 @@ namespace PoloniexBot {
                 // pull last trades
 
                 List<PoloniexAPI.MarketTools.ITrade> trades = new List<ITrade>();
+
+                int failedAttempts = 0;
 
                 while (true) {
                     try {
                         List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, (int)startTimestamp, (int)endTimestamp);
+                        
                         trades.AddRange(temp);
-
+                        
                         if (temp.Count < 300) break;
 
                         endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(temp.Last().Time);
 
+                        failedAttempts = 0;
+
                         ThreadManager.ReportAlive("Data.Store");
-                        Thread.Sleep(1000);
+                        Thread.Sleep(1500);
                     }
                     catch (Exception e) {
                         Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                        Thread.Sleep(1000);
+                        failedAttempts++;
+                        if (failedAttempts >= 3) return false;
+                        Thread.Sleep(4000);
                     }
                 }
-
                 // convert into fake tickers
+
+                if (trades.Count == 0) return false;
 
                 TickerChangedEventArgs[] fakeTickers = new TickerChangedEventArgs[trades.Count];
                 for (int j = 0; j < trades.Count; j++) {
@@ -234,6 +205,8 @@ namespace PoloniexBot {
 
                 tickerData.Add(tickerList);
                 allowUpdatePairs.Add(pair);
+
+                return true;
             }
 
             // Order Data

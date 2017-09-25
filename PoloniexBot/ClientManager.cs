@@ -13,8 +13,8 @@ namespace PoloniexBot {
         static string keysFilename = "settings/APIKeys.file";
         public static PoloniexClient client;
 
-        public static bool Simulate = true;
-        public static bool Training = true;
+        public static bool Simulate = false;
+        public static bool Training = false;
 
         static string[] LoadApiKey () {
             return FileManager.ReadFile(keysFilename);
@@ -55,12 +55,6 @@ namespace PoloniexBot {
 
             Thread.Sleep(1000);
 
-            // Patterns
-            CLI.Manager.PrintNote("Loading Price Patterns");
-            Data.PatternMatching.Manager.LoadFromFile();
-
-            Thread.Sleep(1000);
-
             // Market Summary
 
             while (true) {
@@ -82,39 +76,64 @@ namespace PoloniexBot {
             if (Training) {
                 ThreadManager.Register(() => {
                     /*
+                    KeyValuePair<CurrencyPair, double>[] allPairs = Data.VarAnalysis.GetBestCurrencyPairs();
+
+                    long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
+                    long startTimestamp = endTimestamp - (24 * 3600 * 7); 
+                    
+                    int added = 0;
+                    for (int i = 0; i < allPairs.Length && added < 20; i++) {
+                        if (allPairs[i].Value < 1.01) continue;
+                        if (allPairs[i].Key.BaseCurrency == "BTC") {
+                            try {
+                                Console.WriteLine("Pulling " + allPairs[i]);
+                                Data.Store.PullTickerHistory(allPairs[i].Key, startTimestamp, endTimestamp);
+                                added++;
+                            }
+                            catch (Exception e) {
+                                Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                            }
+
+                            Thread.Sleep(2000);
+                        }
+                    }
+
+                    Data.Store.SaveTradeData();
+                    /*
+                    */
+
+                    Simulation.SimulateAll();
+
+                    // Data.VarAnalysis.AnalyzeAll();
+                    /*
                     List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> markets =
                         new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
 
                     markets.Sort(new Utility.MarketDataComparerVolume());
                     markets.Reverse();
 
-                    long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-                    long startTimestamp = endTimestamp - (6 * 3600 * 1);
+                    for (int i = 0; i < markets.Count; i++) {
+                        if (markets[i].Key.BaseCurrency == "BTC") {
+                            try {
+                                Data.VariableAnalysis.DoFullAnalysis(markets[i].Key);
+                            }
+                            catch (Exception e) {
+                                Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                            }
 
-                    for (int i = 0; i < markets.Count && i < 10; i++) {
-                        Console.WriteLine("Pulling " + markets[i].Key);
-
-                        try {
-                            Data.Store.PullTickerHistory(markets[i].Key, startTimestamp, endTimestamp);
-                        }
-                        catch (Exception e) {
-                            Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                            Thread.Sleep(2000);
                         }
                     }
 
-                    Data.Store.SaveTradeData();
+                    /*
                     */
-                    // Simulation.SimulatePair(markets[i].Key);
-                    // Simulation.SimulateIdeal(markets[i].Key);
-
-                    Simulation.SimulateAll();
 
                 }, "Data Pull", true);
             }
             else {
 
                 // Ticker Feed
-
+                /*
                 while (true) {
                     try {
                         CLI.Manager.PrintNote("Subscribing To Ticker Feed");
@@ -128,7 +147,7 @@ namespace PoloniexBot {
                         Thread.Sleep(5000);
                     }
                 }
-
+                */
                 Thread.Sleep(1000);
 
                 Trading.Manager.Start();
@@ -169,9 +188,7 @@ namespace PoloniexBot {
                 Dictionary<CurrencyPair, PoloniexAPI.MarketTools.IMarketData> finalData = new Dictionary<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>();
                 KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>[] data = marketDataTask.Result.ToArray();
                 for (int i = 0; i < data.Length; i++) {
-                    if (data[i].Key.BaseCurrency == "BTC") {
-                        finalData.Add(data[i].Key, data[i].Value);
-                    }
+                    finalData.Add(data[i].Key, data[i].Value);
                 }
                 Data.Store.MarketData = finalData;
                 Windows.GUIManager.tickerFeedWindow.UpdateMarketData();

@@ -66,5 +66,18 @@ namespace PoloniexBot.CLI {
             }, "Force Sell", true);
         }
 
+        public static void Simulate (string[] parameters) {
+            if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
+
+            string param = parameters[1].Trim().ToLower();
+
+            if (param == "ideal") {
+                Utility.ThreadManager.Register(() => {
+                    
+                    // todo: run something ?
+
+                }, "Simulation", false);
+            }
+        }
     }
 }

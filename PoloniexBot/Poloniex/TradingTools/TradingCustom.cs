@@ -60,20 +60,23 @@ namespace PoloniexAPI.TradingTools {
                     pricePerCoin *= 0.95f;
                     break;
             }
+
+            if (amountQuote <= PoloniexBot.Trading.Rules.RuleMinimumBaseAmount.MinimumAllowedTradeAmount) return 0;
+            if (amountQuote * pricePerCoin <= PoloniexBot.Trading.Rules.RuleMinimumBaseAmount.MinimumAllowedTradeAmount) return 0;
             
             try {
                 pricePerCoin = double.Parse(pricePerCoin.ToString("F8"));
                 var postData = new Dictionary<string, object> {
-                { "currencyPair", currencyPair },
-                { "rate", pricePerCoin.ToStringNormalized() },
-                { "amount", amountQuote.ToStringNormalized() }
-            };
+                    { "currencyPair", currencyPair },
+                    { "rate", pricePerCoin.ToStringNormalized() },
+                    { "amount", amountQuote.ToStringNormalized() }
+                };
 
                 var data = PostData<JObject>(type.ToStringNormalized(), postData);
                 return data.Value<ulong>("orderNumber");
             }
             catch (Exception e) {
-                Utility.ErrorLog.ReportErrorSilent(e);
+                Utility.ErrorLog.ReportError("Error making sale: " + currencyPair + " - " + e.Message, e);
                 return 0;
             }
         }

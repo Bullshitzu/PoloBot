@@ -19,7 +19,7 @@ namespace PoloniexBot.Windows {
         Dictionary<PoloniexAPI.CurrencyPair, double> LastValues;
 
         internal void RecieveMessage (object sender, PoloniexAPI.TickerChangedEventArgs e) {
-            // try {
+            try {
                 e.Timestamp = DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
 
                 double lastPrice;
@@ -35,10 +35,10 @@ namespace PoloniexBot.Windows {
 
                 tickerFeed.UpdateTicker(e);
                 Data.Store.AddTickerData(e);
-            // }
-            // catch (Exception ex) {
-            //    Console.WriteLine("EXCEPTION (RecieveMessage): " + ex.Message);
-            // }
+            }
+            catch (Exception ex) {
+                Console.WriteLine("EXCEPTION (RecieveMessage): " + ex.Message);
+            }
         }
 
         public void UpdateMarketData () {

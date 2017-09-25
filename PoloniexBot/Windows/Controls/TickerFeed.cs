@@ -59,7 +59,7 @@ namespace PoloniexBot.Windows.Controls {
             KeyValuePair<PoloniexAPI.CurrencyPair, PoloniexAPI.MarketTools.IMarketData>[] pairs = Data.Store.MarketData.ToArray();
             List<CurrencyDataPair> pairsList = new List<CurrencyDataPair>();
             for (int i = 0; i < pairs.Length; i++) {
-                pairsList.Add(new CurrencyDataPair(pairs[i].Key, pairs[i].Value));
+                if (pairs[i].Key.BaseCurrency == "BTC") pairsList.Add(new CurrencyDataPair(pairs[i].Key, pairs[i].Value));
             }
             pairsList.Sort();
             pairsList.Reverse();

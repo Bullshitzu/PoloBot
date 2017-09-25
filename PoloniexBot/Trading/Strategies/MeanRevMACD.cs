@@ -8,8 +8,17 @@ using PoloniexBot.Trading.Rules;
 
 namespace PoloniexBot.Trading.Strategies {
     class MeanRevMACD : Strategy {
+
         public MeanRevMACD (CurrencyPair pair) : base(pair) {
             Windows.Controls.StrategyScreen.drawVariables = new string[] { "meanRev", "macd" };
+            Windows.Controls.StrategyScreen.minVariables = new double[] {
+                RuleMeanRev.BuyTrigger - 5,
+                RuleMACD.MacdTrigger - 3,
+            };
+            Windows.Controls.StrategyScreen.maxVariables = new double[] {
+                RuleMeanRev.BuyTrigger + 5,
+                RuleMACD.MacdTrigger + 3,
+            };
         }
 
         // ------------------------------
@@ -31,11 +40,12 @@ namespace PoloniexBot.Trading.Strategies {
 
         TradeRule[] allRules = { };
 
-        RuleGlobalDrop ruleGlobalTrend;
-
         // ------------------------------
 
         private double openPosition = 0;
+
+        double optTimeframe = Data.Predictors.MeanReversion.drawTimeframe;
+        double optTrigger = RuleMeanRev.BuyTrigger;
 
         private Data.Predictors.PriceExtremes predictorExtremes;
         private Data.Predictors.MeanReversion predictorMeanRev;
@@ -43,9 +53,24 @@ namespace PoloniexBot.Trading.Strategies {
 
         public override void Setup (bool simulated = false) {
 
+            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, null);
+
             // ----------------------------------
 
-            SetupRules();
+            try {
+                Data.VariableAnalysis.OptimizedPairData opd = Data.VariableAnalysis.GetPairData(pair);
+                optTimeframe = opd.MeanRevTimeframe;
+                optTrigger = opd.MeanRevTrigger;
+            }
+            catch (Exception e) {
+                CLI.Manager.PrintWarning("No optimized pair data for " + pair + "!");
+            }
+
+            optTrigger *= 1.5;
+
+            // ----------------------------------
+
+            SetupRules(optTrigger);
 
             // ----------------------------------
 
@@ -55,8 +80,8 @@ namespace PoloniexBot.Trading.Strategies {
             openPosition = openPos;
 
             predictorExtremes = new Data.Predictors.PriceExtremes(pair);
-            predictorMeanRev = new Data.Predictors.MeanReversion(pair);
-            predictorMacd = new Data.Predictors.MACD(pair);
+            predictorMeanRev = new Data.Predictors.MeanReversion(pair, (int)optTimeframe);
+            predictorMacd = new Data.Predictors.MACD(pair, (int)(optTimeframe / 3));
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
@@ -74,7 +99,7 @@ namespace PoloniexBot.Trading.Strategies {
                 if (i % 100 == 0) Utility.ThreadManager.ReportAlive("LowAlts");
             }
         }
-        private void SetupRules () {
+        private void SetupRules (double optTrigger) {
             ruleDelayAllTrades = new RuleDelayAllTrade();
             ruleDelayBuy = new RuleDelayBuy();
 
@@ -89,10 +114,8 @@ namespace PoloniexBot.Trading.Strategies {
             ruleSellBand = new RuleSellBand();
             ruleStopLoss = new RuleStopLoss();
 
-            ruleMacd = new RuleMACD();
-            ruleMeanRev = new RuleMeanRev();
-
-            ruleGlobalTrend = new RuleGlobalDrop("meanRev");
+            ruleMacd = new RuleMACD(0);
+            ruleMeanRev = new RuleMeanRev(optTrigger);
 
             // order doesn't matter
             allRules = new TradeRule[] { 
@@ -102,6 +125,13 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinQuote, ruleMinQuotePost, // minimum quote amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
                 ruleMacd, ruleMeanRev }; // buy rules
+        }
+
+        private double GetOPTMultiplier (double ch24) {
+            double m = (ch24 / 20) + 2.5;
+            if (m < 1.5) m = 1.5;
+            if (m > 3) m = 3;
+            return m;
         }
 
         public override void Reset () {
@@ -122,6 +152,10 @@ namespace PoloniexBot.Trading.Strategies {
             double lastPrice = lastTicker.MarketData.PriceLast;
             double buyPrice = lastTicker.MarketData.OrderTopBuy;
             double sellPrice = lastTicker.MarketData.OrderTopSell;
+            double change24 = lastTicker.ChangeLast;
+
+            double mult = GetOPTMultiplier(change24);
+            ruleMeanRev.SetTrigger(mult);
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Data store returned NULL tickers for pair " + pair);
@@ -199,13 +233,6 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("macd", macd);
 
             // -----------------------
-            // Recalculate global rules
-            // -----------------------
-
-            ruleGlobalTrend.Recalculate(ruleVariables, pair);
-            ruleVariables.Add("mRevGlobal", RuleGlobalDrop.GetGlobalTrend());
-
-            // -----------------------
             // Recalculate all the rules
             // -----------------------
 
@@ -245,15 +272,14 @@ namespace PoloniexBot.Trading.Strategies {
                     if (ruleMinQuote.Result == RuleResult.BlockSell) {
                         // if it's blocking sell that means we don't own quote, so go ahead with buying
 
-                        if (ruleGlobalTrend.Result == RuleResult.None) {
-                            // global trend isn't dropping
+                        if (ruleMacd.currentResult == RuleResult.Buy && ruleMeanRev.currentResult == RuleResult.Buy) {
+                            // MACD has stopped falling and price is below average
 
-                            if (ruleMacd.currentResult == RuleResult.Buy && ruleMeanRev.currentResult == RuleResult.Buy) {
-                                // MACD has stopped falling and price is below average
+                            debugMacd = macd;
+                            debugMeanRev = meanRev;
 
-                                Buy(sellPrice, postQuoteAmount);
-                                return;
-                            }
+                            Buy(sellPrice, postQuoteAmount);
+                            return;
                         }
                     }
                 }
@@ -279,14 +305,30 @@ namespace PoloniexBot.Trading.Strategies {
                             // price is below the sell band
 
                             Sell(buyPrice, currQuoteAmount);
+
+                            SaveTradeData(true, LastSellTime - LastBuyTime);
+
                             return;
                         }
                     }
+                    /*
+                    if (ruleMacd.currentResult == RuleResult.Sell) {
+                        // price is currently dropping
 
+                        Sell(buyPrice, currQuoteAmount);
+
+                        SaveTradeData(false, LastSellTime - LastBuyTime);
+
+                        return;
+                    }
+                    */
                     if (ruleStopLoss.Result == RuleResult.Sell) {
                         // price has dropped below stop-loss
 
                         Sell(buyPrice, currQuoteAmount);
+
+                        SaveTradeData(false, LastSellTime - LastBuyTime);
+
                         return;
                     }
                 }
@@ -295,7 +337,7 @@ namespace PoloniexBot.Trading.Strategies {
         }
 
         private void Buy (double sellPrice, double quoteAmount) {
-            
+
             // -----------------------------
             Console.WriteLine("Attempting Buy - " + pair);
             Console.WriteLine("Price: " + sellPrice.ToString("F8") + ", Amount: " + quoteAmount.ToString("F8"));
@@ -308,14 +350,15 @@ namespace PoloniexBot.Trading.Strategies {
                     Console.WriteLine("Error making buy");
                 }
                 else {
-                    Utility.TradeTracker.ReportBuy(pair, quoteAmount, sellPrice);
-
                     LastBuyTime = Data.Store.GetLastTicker(pair).Timestamp;
+
+                    Utility.TradeTracker.ReportBuy(pair, quoteAmount, sellPrice, LastBuyTime);
 
                     openPosition = sellPrice;
                     predictorExtremes.CurrentMaximum = sellPrice;
 
                     ruleForce.currentResult = RuleResult.None;
+
                 }
             }
             catch (Exception e) {
@@ -336,20 +379,47 @@ namespace PoloniexBot.Trading.Strategies {
                     Console.WriteLine("Error making sale");
                 }
                 else {
-                    Utility.TradeTracker.ReportSell(pair, quoteAmount, buyPrice);
-
                     LastSellTime = Data.Store.GetLastTicker(pair).Timestamp;
+
+                    Utility.TradeTracker.ReportSell(pair, quoteAmount, buyPrice, LastSellTime);
 
                     openPosition = 0;
                     predictorExtremes.CurrentMaximum = 0;
                     predictorExtremes.CurrentMinimum = buyPrice;
 
                     ruleForce.currentResult = RuleResult.None;
+
                 }
             }
             catch (Exception e) {
                 Console.WriteLine("Error making sale: " + e.Message);
             }
+        }
+
+        // ---------------------------------------------
+
+        double debugMacd = 0;
+        double debugMeanRev = 0;
+
+        private void SaveTradeData (bool profit, long timespan) {
+
+            List<string> lines = new List<string>();
+
+            int hours = (int)(timespan / 3600);
+            int minutes = (int)((timespan % 3600) / 60);
+            int seconds = (int)(timespan % 60);
+
+            lines.Add("");
+            lines.Add(pair.ToString());
+            lines.Add(hours + ":" + minutes + ":" + seconds);
+            lines.Add("Macd: " + debugMacd.ToString("F8"));
+            lines.Add("MeanRev: " + debugMeanRev.ToString("F8"));
+            lines.Add("");
+
+            string filename = "Logs/Trades" + (profit ? "Good" : "Bad") + ".data";
+
+            Utility.FileManager.SaveFileConcat(filename, lines.ToArray());
+
         }
     }
 }

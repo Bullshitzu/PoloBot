@@ -47,11 +47,6 @@ namespace PoloniexBot.Trading.Rules {
                 return;
             }
 
-            if (GlobalTrend < BlockBuyTrigger) {
-                currentResult = RuleResult.BlockBuy;
-                return;
-            }
-
             currentResult = RuleResult.None;
         }
 

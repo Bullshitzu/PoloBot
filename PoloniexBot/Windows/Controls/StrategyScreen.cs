@@ -15,23 +15,28 @@ namespace PoloniexBot.Windows.Controls {
             InitializeComponent();
         }
 
-        private Dictionary<CurrencyPair, Dictionary<string, double>> variables;
-        private KeyValuePair<CurrencyPair, Dictionary<string, double>>[] data;
+        private List<KeyValuePair<CurrencyPair, Dictionary<string, double>>> data;
 
         public void UpdateData (CurrencyPair pair, Dictionary<string, double> vars) {
-            if (this.variables == null) this.variables = new Dictionary<CurrencyPair, Dictionary<string, double>>();
+            if (data == null) data = new List<KeyValuePair<CurrencyPair, Dictionary<string, double>>>();
 
-            this.variables.Remove(pair);
-            this.variables.Add(pair, vars);
-
-            data = variables.ToArray();
+            lock (data) {
+                for (int i = 0; i < data.Count; i++) {
+                    if (pair == data[i].Key) {
+                        data[i] = new KeyValuePair<CurrencyPair, Dictionary<string, double>>(pair, vars);
+                        return;
+                    }
+                }
+                data.Add(new KeyValuePair<CurrencyPair, Dictionary<string, double>>(pair, vars));
+            }
         }
         public void ClearData () {
-            if (variables != null) variables.Clear();
             if (data != null) data = null;
         }
 
         public static string[] drawVariables = { };
+        public static double[] minVariables = { };
+        public static double[] maxVariables = { };
 
         // ---------------------------------------
         // Drawing
@@ -42,6 +47,12 @@ namespace PoloniexBot.Windows.Controls {
                 System.Drawing.FontStyle.Bold,
                 System.Drawing.GraphicsUnit.Point,
                 ((byte)(238)));
+        Font fontSmall = new System.Drawing.Font(
+                "Calibri Bold Caps", 8F,
+                System.Drawing.FontStyle.Bold,
+                System.Drawing.GraphicsUnit.Point,
+                ((byte)(238)));
+
         Brush brush = new SolidBrush(Color.Gray);
         Brush brushEmphasis = new SolidBrush(Color.Silver);
         
@@ -53,23 +64,84 @@ namespace PoloniexBot.Windows.Controls {
 
             g.Clear(BackColor);
 
-            if (data == null || data.Length == 0) return;
+            if (data == null || data.Count == 0) return;
 
             // 	X X X X
             // 	X X X X
             // 	X X X X
 
             int index = 0;
-            for (int x = 0; x < 5; x++) {
-                for (int y = 0; y < 4; y++) {
-                    if (index >= data.Length) return;
 
-                    float xOffset = 5 + (((Width - 10) / 5) * x);
-                    float yOffset = 5 + (((Height - 10) / 4) * y);
+            float xMove = (Width - 10) / 5;
+            float yMove = (Height- 10) / 4;
 
-                    DrawField(g, xOffset, yOffset, data[index].Key, data[index].Value);
+            lock (data) {
+                for (int x = 0; x < 5; x++) {
+                    for (int y = 0; y < 4; y++) {
+                        if (index >= data.Count) return;
 
-                    index++;
+                        float xOffset = 5 + (xMove * x);
+                        float yOffset = 5 + (yMove * y);
+
+                        // DrawField(g, xOffset, yOffset, data[index].Key, data[index].Value);
+                        DrawBlock(g, new RectangleF(xOffset, yOffset, xMove, yMove), data[index].Key, data[index].Value);
+
+                        index++;
+                    }
+                }
+            }
+        }
+
+        private void DrawBlock (Graphics g, RectangleF rect, CurrencyPair pair, Dictionary<string, double> vars) {
+
+            // quote name on top
+
+            string title = pair.QuoteCurrency;
+            float width = g.MeasureString(title, fontSmall).Width;
+
+            g.DrawString(title, fontSmall, brushEmphasis, rect.X + (rect.Width / 2) - (width / 2), rect.Y + 5);
+
+            // variables
+
+            if (vars == null) return;
+
+            float posY = rect.Y + 22;
+            using (Brush brushBackground = new SolidBrush(Color.Black)) {
+                using (Pen pen = new Pen(brushBackground)) {
+                    for (int i = 0; i < drawVariables.Length; i++) {
+
+                        // variable boxes
+
+                        g.FillRectangle(brushBackground, rect.X + 5, posY, rect.Width - 10, 15);
+
+                        // variable bar
+
+                        double var;
+                        if (vars.TryGetValue(drawVariables[i], out var)) {
+                            double min = minVariables[i];
+                            double max = maxVariables[i];
+
+                            double mult = var;
+                            if (mult < min) mult = 0.1;
+                            else if (mult > max) mult = 1;
+                            else mult = (mult - min) / (max - min);
+
+                            Brush barBrush = mult > 0.5 ? brushUP : brushDOWN;
+
+                            g.FillRectangle(barBrush, rect.X + 5, posY, (float)mult * (rect.Width - 10), 15);
+
+                            // variable name
+
+                            g.DrawString(drawVariables[i], fontSmall, brushBackground, new PointF(rect.X + 6, posY + 1));
+
+                        }
+
+                        posY += 20;
+                    }
+
+                    // center line
+
+                    g.DrawLine(pen, rect.X + (rect.Width / 2), rect.Y + 20, rect.X + (rect.Width / 2), rect.Y + 80);
                 }
             }
         }
@@ -77,6 +149,8 @@ namespace PoloniexBot.Windows.Controls {
         private void DrawField (Graphics g, float xOffset, float yOffset, CurrencyPair pair, Dictionary<string, double> vars) {
 
             g.DrawString(pair.ToString("/"), fontTitle, brushEmphasis, new PointF(xOffset, yOffset));
+
+            if (vars == null) return;
 
             float xPos = xOffset;
             float yPos = yOffset + fontTitle.Height;
@@ -100,5 +174,6 @@ namespace PoloniexBot.Windows.Controls {
 
             return Color.FromArgb(r, g, b);
         }
+
     }
 }

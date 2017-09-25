@@ -5,21 +5,22 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
-    class RuleBollinger : TradeRule {
+    class RuleCh24 : TradeRule {
 
-        public static double Trigger = -20;
+        public double localTrigger = 10;
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double bandSizeDelta = 0;
+            double ch24;
 
-            if (!values.TryGetValue("bandSizeDelta", out bandSizeDelta)) throw new VariableNotIncludedException("bandSizeDelta");
+            if (!values.TryGetValue("ch24", out ch24)) ch24 = double.MinValue;
 
-            if (bandSizeDelta < Trigger) {
+            if (ch24 > localTrigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }
             currentResult = RuleResult.None;
+
         }
     }
 }

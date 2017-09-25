@@ -8,14 +8,19 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class PriceDelta : Predictor {
 
-        public PriceDelta (CurrencyPair pair) : base(pair) { }
+        public PriceDelta (CurrencyPair pair, int timeframe = 3600) : base(pair) {
+            Timeframe = timeframe;
+        }
         public override void SignResult (ResultSet rs) {
             rs.signature = "Price Delta";
         }
 
-        public static long Timeframe1 = 60; // 1 min
-        public static long Timeframe2 = 300; // 5 min
-        public static long Timeframe3 = 900; // 30 min
+        private int Timeframe = 3600;
+        private int StartTime = 0;
+
+        public void SetStartTime (int val) {
+            this.StartTime = val;
+        }
 
         public void Recalculate (object dataSet) {
             TickerChangedEventArgs[] tickers = (TickerChangedEventArgs[])dataSet;
@@ -26,34 +31,29 @@ namespace PoloniexBot.Data.Predictors {
             rs.variables.Add("priceBuy", new ResultSet.Variable("Buy", tickers.Last().MarketData.OrderTopBuy, 8));
             rs.variables.Add("priceSell", new ResultSet.Variable("Sell", tickers.Last().MarketData.OrderTopSell, 8));
 
-            // calculate price deltas for index periods
+            double delta = GetPriceDelta(tickers);
 
-            double delta1 = GetPriceDelta(tickers, Timeframe1);
-            double delta2 = GetPriceDelta(tickers, Timeframe2);
-            double delta3 = GetPriceDelta(tickers, Timeframe3);
-
-            rs.variables.Add("priceDelta1", new ResultSet.Variable("Price Delta 1", delta1, 8));
-            rs.variables.Add("priceDelta2", new ResultSet.Variable("Price Delta 2", delta2, 8));
-            rs.variables.Add("priceDelta3", new ResultSet.Variable("Price Delta 3", delta3, 8));
+            rs.variables.Add("priceDelta", new ResultSet.Variable("Price Delta", delta, 8));
 
             SaveResult(rs);
         }
 
-        private double GetPriceDelta (TickerChangedEventArgs[] tickers, long timeframe) {
+        private double GetPriceDelta (TickerChangedEventArgs[] tickers) {
 
             double endPrice = tickers.Last().MarketData.OrderTopBuy;
             double startPrice = endPrice;
 
-            long endTime = tickers.Last().Timestamp;
-            long startTime = endTime - timeframe;
-            
+            long endTime = tickers.Last().Timestamp - StartTime;
+            long startTime = endTime - Timeframe;
+
             for (int i = tickers.Length-1; i >= 0; i--) {
+                if (tickers[i].Timestamp > endTime) endPrice = tickers[i].MarketData.PriceLast;
                 if (tickers[i].Timestamp < startTime) break;
-                startPrice = tickers[i].MarketData.OrderTopBuy;
+                startPrice = tickers[i].MarketData.PriceLast;
             }
 
-            double delta = ((endPrice - startPrice) / startPrice) * 100;
-            return delta;
+            return ((endPrice - startPrice) / startPrice) * 100;
         }
+
     }
 }

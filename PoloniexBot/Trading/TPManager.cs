@@ -23,11 +23,17 @@ namespace PoloniexBot.Trading {
             return null;
         }
 
+        public TPManager (CurrencyPair pair, Strategies.Strategy strategy) {
+            this.pair = pair;
+            invokeQueue = new TSList<InvokePair>();
+
+            this.strategy = strategy;
+        }
         public TPManager (CurrencyPair pair) {
             this.pair = pair;
             invokeQueue = new TSList<InvokePair>();
 
-            strategy = new Strategies.MeanRevMACD(pair);
+            strategy = new Strategies.MeanRevADX(pair);
         }
         public void Setup (bool pullTickerHistory = true) {
 

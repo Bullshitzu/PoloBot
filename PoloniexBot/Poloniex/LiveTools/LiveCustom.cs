@@ -40,7 +40,7 @@ namespace PoloniexAPI.LiveTools {
         }
 
         void OnConnectionError (object sender, WampSharp.Core.Listener.WampConnectionErrorEventArgs e) {
-            Stop();
+            PoloniexBot.Trading.Manager.RefreshTickersManually = true;
         }
 
         public void Stop () {
@@ -110,6 +110,9 @@ namespace PoloniexAPI.LiveTools {
         }
 
         private void ProcessMessageTicker (ISerializedValue[] arguments) {
+
+            Utility.ModuleMonitor.ReportAlive("TickerStream", 180, () => { OnConnectionBroken(null, null); });
+
             try {
                 var currencyPair = CurrencyPair.Parse(arguments[0].Deserialize<string>());
                 var priceLast = arguments[1].Deserialize<double>();

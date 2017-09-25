@@ -12,5 +12,6 @@ namespace PoloniexAPI.MarketTools {
         double OrderSpreadPercentage { get; }
 
         bool IsFrozen { get; }
+
     }
 }

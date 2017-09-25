@@ -36,5 +36,18 @@ namespace PoloniexAPI.MarketTools {
         }
 
         public MarketData () { }
+
+        public static bool Equal (IMarketData a, IMarketData b) {
+
+            if (a.PriceLast != b.PriceLast) return false;
+
+            if (a.OrderTopBuy != b.OrderTopBuy) return false;
+            if (a.OrderTopSell != b.OrderTopSell) return false;
+
+            if (a.PriceChangePercentage != b.PriceChangePercentage) return false;
+            if (a.Volume24HourBase != b.Volume24HourBase) return false;
+
+            return true;
+        }
     }
 }

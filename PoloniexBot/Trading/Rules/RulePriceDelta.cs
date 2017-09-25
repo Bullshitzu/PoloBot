@@ -8,20 +8,30 @@ namespace PoloniexBot.Trading.Rules {
     class RulePriceDelta : TradeRule {
 
         public static double Trigger1 = 0.5;
-        public static double Trigger2 = 1;
-        public static double Trigger3 = 2;
+        public static double Trigger2 = 1.5;
+        public static double Trigger3 = 3;
+
+        public RulePriceDelta (double trigger = 0.5) {
+            localTrigger1 = trigger * 1;
+            localTrigger2 = trigger * 3;
+            localTrigger3 = trigger * 6;
+        }
+
+        private double localTrigger1;
+        private double localTrigger2;
+        private double localTrigger3;
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double priceDelta1 = 0;
-            double priceDelta2 = 0;
-            double priceDelta3 = 0;
+            double priceDelta1;
+            double priceDelta2;
+            double priceDelta3;
 
-            if (!values.TryGetValue("priceDelta1", out priceDelta1)) throw new VariableNotIncludedException("priceDelta1");
-            if (!values.TryGetValue("priceDelta2", out priceDelta2)) throw new VariableNotIncludedException("priceDelta2");
-            if (!values.TryGetValue("priceDelta3", out priceDelta3)) throw new VariableNotIncludedException("priceDelta3");
+            if (!values.TryGetValue("priceDelta1", out priceDelta1)) priceDelta1 = double.MaxValue;
+            if (!values.TryGetValue("priceDelta2", out priceDelta2)) priceDelta2 = double.MaxValue;
+            if (!values.TryGetValue("priceDelta3", out priceDelta3)) priceDelta3 = double.MaxValue;
 
-            if (priceDelta1 > Trigger1 && priceDelta2 > Trigger2 && priceDelta3 > Trigger3) {
+            if (priceDelta1 > localTrigger1 && priceDelta2 > localTrigger2 && priceDelta3 > localTrigger3) {
                 currentResult = RuleResult.Buy;
                 return;
             }

@@ -8,10 +8,13 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class BollingerBands : Predictor {
 
-        private const int Timespan = 300; // seconds
         private const int BandDeltaTime = 3600; // seconds
 
-        public BollingerBands (CurrencyPair pair) : base(pair) { }
+        private int localTimespan = 300;
+
+        public BollingerBands (CurrencyPair pair, int timespan = 300) : base(pair) {
+            localTimespan = timespan;
+        }
         public override void SignResult (ResultSet rs) {
             rs.signature = "Bollinger Bands";
         }
@@ -69,7 +72,7 @@ namespace PoloniexBot.Data.Predictors {
         private double GetSMA (TickerChangedEventArgs[] tickers) {
 
             long endTime = tickers.Last().Timestamp;
-            long startTime = endTime - Timespan;
+            long startTime = endTime - localTimespan;
 
             double sum = 0;
             int sumCount = 0;
@@ -86,7 +89,7 @@ namespace PoloniexBot.Data.Predictors {
         private double GetStDev (TickerChangedEventArgs[] tickers, double SMA) {
             
             long endTime = tickers.Last().Timestamp;
-            long startTime = endTime - Timespan;
+            long startTime = endTime - localTimespan;
 
             double sum = 0;
             int sumCount = 0;

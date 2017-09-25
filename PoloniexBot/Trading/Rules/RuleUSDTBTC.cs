@@ -5,21 +5,22 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
-    class RuleBollinger : TradeRule {
+    class RuleUSDTBTC : TradeRule {
 
-        public static double Trigger = -20;
+        public static double Trigger = -0.05;
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double bandSizeDelta = 0;
+            double usdtBtcMeanRev;
 
-            if (!values.TryGetValue("bandSizeDelta", out bandSizeDelta)) throw new VariableNotIncludedException("bandSizeDelta");
+            if (!values.TryGetValue("usdtBtcMACD", out usdtBtcMeanRev)) throw new VariableNotIncludedException("usdtBtcMACD");
 
-            if (bandSizeDelta < Trigger) {
+            if (usdtBtcMeanRev < Trigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }
             currentResult = RuleResult.None;
+
         }
     }
 }

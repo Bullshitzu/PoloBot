@@ -57,21 +57,5 @@ namespace PoloniexBot.Data.Predictors {
             return Analysis.Other.RelativeStrenghtIndex(prices.ToArray());
         }
 
-        // -------------------
-        // Drawing Variables
-        // -------------------
-
-        private Color colorGray = Color.FromArgb(128, 128, 128, 128);
-        private Color colorBaseBlue = Color.FromArgb(107, 144, 148);
-
-        private Font fontSmall = new System.Drawing.Font("Calibri Bold Caps", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-        private Font fontMedium = new System.Drawing.Font("Calibri Bold Caps", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-        private Font fontLarge = new System.Drawing.Font("Calibri Bold Caps", 15F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-
-        // -------------------
-
-        public override void DrawPredictor (Graphics g, long timePeriod, RectangleF rect) {
-            // todo: this
-        }
     }
 }

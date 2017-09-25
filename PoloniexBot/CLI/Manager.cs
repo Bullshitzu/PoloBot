@@ -60,6 +60,8 @@ namespace PoloniexBot.CLI {
             comms.Add(new Command("buy", "Forces a manual buy of the specified trade pair", new Parameter[] { new Parameter("currency") }, CommandImplementations.ForceBuy));
             comms.Add(new Command("sell", "Forces a manual sell of the specified trade pair", new Parameter[] { new Parameter("currency") }, CommandImplementations.ForceSell));
 
+            comms.Add(new Command("simulate", "Runs a simulation on stored ticker data", new Parameter[] { new Parameter("ideal") }, CommandImplementations.Simulate));
+
             commands = new Command[comms.Count];
             for (int i = 0; i < comms.Count; i++) {
                 commands[i] = comms[i];
@@ -75,7 +77,7 @@ namespace PoloniexBot.CLI {
             RefreshWindow();
         }
         public static void PrintError (string text) {
-            // messages.Insert(0, new Message(MessageType.Error, text));
+            messages.Insert(0, new Message(MessageType.Error, text));
             RefreshWindow();
         }
         public static void PrintLog (string text) {
@@ -98,7 +100,9 @@ namespace PoloniexBot.CLI {
         }
 
         public static void ProcessInput (string text) {
-            
+
+            messages.Insert(0, new Message(MessageType.User, text));
+
             string cleanedInput = text.ToLower().Trim();
             string[] parts = cleanedInput.Split(' ');
 

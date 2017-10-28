@@ -31,6 +31,8 @@ namespace PoloniexBot.Trading.Strategies {
         TradeRule ruleMinQuote;
         TradeRule ruleMinQuotePost;
 
+        TradeRule ruleMinQuoteOrders;
+
         TradeRule ruleMinSellprice;
         TradeRule ruleSellBand;
         TradeRule ruleStopLoss;
@@ -81,7 +83,7 @@ namespace PoloniexBot.Trading.Strategies {
                 CLI.Manager.PrintWarning("No optimized pair data for " + pair + "!");
             }
 
-            optTrigger *= 0.7;
+            optTrigger *= 1;
 
             // ----------------------------------
 
@@ -126,9 +128,11 @@ namespace PoloniexBot.Trading.Strategies {
             ruleMinQuote = new RuleMinimumQuoteAmount();
             ruleMinQuotePost = new RuleMinimumQuoteAmountPost();
 
+            ruleMinQuoteOrders = new RuleMinimumQuoteAmountOrders();
+
             ruleMinSellprice = new RuleMinimumSellPrice();
             ruleSellBand = new RuleSellBand();
-            ruleStopLoss = new RuleStopLoss();
+            ruleStopLoss = new RuleStopLoss(0.85);
 
             ruleMeanRev = new RuleMeanRev(mRevTrigger);
             ruleADX = new RuleADX();
@@ -139,6 +143,7 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleForce, // manual utility
                 ruleMinBase, ruleMinBasePost, // minimum base amount
                 ruleMinQuote, ruleMinQuotePost, // minimum quote amount
+                ruleMinQuoteOrders, // minimum orders amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
                 ruleMeanRev, ruleADX }; // buy rules
         }
@@ -170,7 +175,10 @@ namespace PoloniexBot.Trading.Strategies {
             double currQuoteAmount = Manager.GetWalletState(pair.QuoteCurrency);
             double currBaseAmount = Manager.GetWalletState(pair.BaseCurrency);
 
-            double currTradableBaseAmount = currBaseAmount * 0.3; // VolatilityScore;
+            double currQuoteOrdersAmount = Manager.GetWalletStateOrders(pair.QuoteCurrency);
+
+            double currTradableBaseAmount = currBaseAmount * 0.5;
+            if (currTradableBaseAmount < RuleMinimumBaseAmount.MinimumTradeAmount) currTradableBaseAmount = currBaseAmount;
 
             double postBaseAmount = currQuoteAmount * buyPrice;
             double postQuoteAmount = currTradableBaseAmount / sellPrice;
@@ -209,6 +217,8 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("sellPrice", sellPrice);
 
             ruleVariables.Add("openPrice", openPosition);
+
+            ruleVariables.Add("quoteAmountOrders", currQuoteOrdersAmount);
 
             ruleVariables.Add("quoteAmount", currQuoteAmount);
             ruleVariables.Add("baseAmount", currBaseAmount);
@@ -290,6 +300,13 @@ namespace PoloniexBot.Trading.Strategies {
                 if (ruleDelayAllTrades.Result != RuleResult.BlockBuySell) {
                     // enough time has passed since the last trades were made
 
+                    if (ruleStopLoss.Result == RuleResult.Sell) {
+                        // price has dropped below stop-loss
+
+                        Sell(buyPrice, currQuoteAmount);
+                        return;
+                    }
+
                     if (ruleMinSellprice.Result != RuleResult.BlockSell) {
                         // current price is profitable
 
@@ -300,17 +317,9 @@ namespace PoloniexBot.Trading.Strategies {
                             return;
                         }
                     }
-
-                    if (ruleStopLoss.Result == RuleResult.Sell) {
-                        // price has dropped below stop-loss
-
-                        Sell(buyPrice, currQuoteAmount);
-                        return;
-                    }
                 }
             }
             #endregion
-
         }
 
         private void Buy (double sellPrice, double quoteAmount) {
@@ -329,13 +338,14 @@ namespace PoloniexBot.Trading.Strategies {
                 else {
                     LastBuyTime = Data.Store.GetLastTicker(pair).Timestamp;
 
-                    Utility.TradeTracker.ReportBuy(pair, quoteAmount, sellPrice, LastBuyTime);
-
                     openPosition = sellPrice;
                     predictorExtremes.CurrentMaximum = sellPrice;
                     predictorExtremes.CurrentMinimum = sellPrice;
 
                     ruleForce.currentResult = RuleResult.None;
+
+                    Utility.TradeTracker.ReportBuy(pair, quoteAmount, sellPrice, LastBuyTime);
+                    Utility.TradeTracker.SetOrderData(pair, id, sellPrice);
                 }
             }
             catch (Exception e) {
@@ -350,7 +360,7 @@ namespace PoloniexBot.Trading.Strategies {
             // -----------------------------
 
             try {
-                ulong id = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Sell, buyPrice, quoteAmount).Result;
+                ulong id = PoloniexBot.ClientManager.client.Trading.PostOrderAsync(pair, OrderType.Sell, buyPrice * 0.95, quoteAmount, false).Result;
 
                 if (id == 0) {
                     Console.WriteLine("Error making sale");
@@ -358,9 +368,10 @@ namespace PoloniexBot.Trading.Strategies {
                 else {
                     LastSellTime = Data.Store.GetLastTicker(pair).Timestamp;
 
-                    Utility.TradeTracker.ReportSell(pair, quoteAmount, buyPrice, LastSellTime);
-
                     ruleForce.currentResult = RuleResult.None;
+
+                    Utility.TradeTracker.ReportSell(pair, quoteAmount, buyPrice, LastSellTime);
+                    Utility.TradeTracker.SetOrderData(pair, id, buyPrice);
                 }
             }
             catch (Exception e) {

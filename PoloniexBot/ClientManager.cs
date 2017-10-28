@@ -71,19 +71,32 @@ namespace PoloniexBot {
                 }
             }
 
+            // Pattern Repository
+
+            CLI.Manager.PrintNote("Loading Pattern Repository");
+            Data.PatternMatching.Manager.LoadFromFile();
+
+            Thread.Sleep(1000);
+
             // Training
 
             if (Training) {
                 ThreadManager.Register(() => {
-                    /*
+
+                    // Data.VarAnalysis.AnalyzeAll();
+                    
                     KeyValuePair<CurrencyPair, double>[] allPairs = Data.VarAnalysis.GetBestCurrencyPairs();
+                    // KeyValuePair<CurrencyPair, double>[] allPairs = Data.ANN.Training.GetNetworkAccuracy().ToArray();
+
+
+
+
 
                     long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
-                    long startTimestamp = endTimestamp - (24 * 3600 * 7); 
+                    long startTimestamp = 1508878554; // endTimestamp - (24 * 3600 * 2);
                     
                     int added = 0;
                     for (int i = 0; i < allPairs.Length && added < 20; i++) {
-                        if (allPairs[i].Value < 1.01) continue;
                         if (allPairs[i].Key.BaseCurrency == "BTC") {
                             try {
                                 Console.WriteLine("Pulling " + allPairs[i]);
@@ -97,36 +110,29 @@ namespace PoloniexBot {
                             Thread.Sleep(2000);
                         }
                     }
-
+                    
                     Data.Store.SaveTradeData();
+                    
+                    /*
+                    */
+
+                    /*
+                    KeyValuePair<CurrencyPair, double>[] allPairs = Data.ANN.Training.GetNetworkAccuracy().ToArray();
+                    for (int i = 0; i < allPairs.Length; i++) {
+                        try {
+                            Data.VariableAnalysis.DoFullAnalysis(allPairs[i].Key);
+                        }
+                        catch (Exception) { }
+                    }
                     /*
                     */
 
                     Simulation.SimulateAll();
 
-                    // Data.VarAnalysis.AnalyzeAll();
-                    /*
-                    List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> markets =
-                        new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
+                    // Data.PatternMatching.Manager.BuildPatternDatabase();
 
-                    markets.Sort(new Utility.MarketDataComparerVolume());
-                    markets.Reverse();
+                    // Data.ANN.Training.RebuildAllNetworks();
 
-                    for (int i = 0; i < markets.Count; i++) {
-                        if (markets[i].Key.BaseCurrency == "BTC") {
-                            try {
-                                Data.VariableAnalysis.DoFullAnalysis(markets[i].Key);
-                            }
-                            catch (Exception e) {
-                                Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                            }
-
-                            Thread.Sleep(2000);
-                        }
-                    }
-
-                    /*
-                    */
 
                 }, "Data Pull", true);
             }
@@ -149,6 +155,7 @@ namespace PoloniexBot {
                 }
                 */
                 Thread.Sleep(1000);
+
 
                 Trading.Manager.Start();
                 ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);

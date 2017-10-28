@@ -5,19 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
-    class RuleMinimumSellPrice : TradeRule {
-
-        public const double ProfitFactor = 1.02; // +1.5% minimum profit
+    class RuleMinimumSellPriceGiver : TradeRule {
+        public const double ProfitFactor = 1.015; // +15% minimum profit
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double currBuyPrice = 0; // current price
+            double currSellPrice = 0; // current price
             double openPrice = 0; // price at which it was bought
 
-            if (!values.TryGetValue("buyPrice", out currBuyPrice)) throw new VariableNotIncludedException();
+            if (!values.TryGetValue("sellPrice", out currSellPrice)) throw new VariableNotIncludedException();
             if (!values.TryGetValue("openPrice", out openPrice)) throw new VariableNotIncludedException();
 
-            if (currBuyPrice < openPrice * ProfitFactor) {
+            if (currSellPrice < openPrice * ProfitFactor) {
                 currentResult = RuleResult.BlockSell;
                 return;
             }

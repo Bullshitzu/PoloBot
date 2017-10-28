@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleCh24 : TradeRule {
 
-        public double localTrigger = 10;
+        public double localTrigger = 0.75; // 10;
 
         public override void Recalculate (Dictionary<string, double> values) {
 

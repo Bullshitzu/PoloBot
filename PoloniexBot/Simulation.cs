@@ -87,10 +87,13 @@ namespace PoloniexBot {
 
                 // add first 10000
 
-                int startIndex = allTickers.Count / 10;
+                int startIndex = 0;
+                long endTime = allTickers.First().Timestamp + 7200;
 
-                for (int i = 0; i < startIndex; i++) {
+                for (int i = 0; i < allTickers.Count; i++) {
+                    if (allTickers[i].Timestamp > endTime) break;
                     AddTicker(allTickers[i], null, false);
+                    startIndex = i;
                 }
 
                 // rebuild TPManagers
@@ -104,7 +107,9 @@ namespace PoloniexBot {
                 for (int i = startIndex; i < allTickers.Count; i++) {
                     AddTicker(allTickers[i], tpManagers, true);
 
-                    if (i % 10000 == 0) {
+
+
+                    if (i % 100 == 0) {
                         float percent = (((float)i) / allTickers.Count) * 100;
                         Console.WriteLine("Progress: " + percent.ToString("F2") + "%");
                     }

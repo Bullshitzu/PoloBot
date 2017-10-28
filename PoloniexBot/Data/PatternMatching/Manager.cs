@@ -4,179 +4,227 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using PoloniexAPI;
+using Utility;
 
 namespace PoloniexBot.Data.PatternMatching {
     public static class Manager {
 
         // ------------------------------------------
 
-        const int Period = 300; // 5 min
+        const int Period = 900; // 5 min
         const int PeriodCount = 8; // 40m with 5m periods
 
         const string PatternsDirectory = "data";
-        const string PatternsFilenamePrefix = "patterns_";
+        const string PatternsFilenamePrefix = "patterns";
 
         // ------------------------------------------
 
-        private static Dictionary<Trading.MarketAction, List<Pattern>> PatternRepo;
+        public static List<KeyValuePair<CurrencyPair, List<Pattern>>> Repo;
 
         // ------------------------------------------
 
-        public static double AnalyzePattern (Pattern p, Trading.MarketAction type, int count = 10) {
-            KeyValuePair<Pattern, double>[] patterns = ComparePattern(p, type);
-            if (patterns == null) return double.MaxValue;
+        public static void BuildPatternDatabase () {
+            if (Repo == null) Repo = new List<KeyValuePair<CurrencyPair, List<Pattern>>>();
+            
+            TSList<TSList<TickerChangedEventArgs>> allTickers = Data.Store.LoadTradeData(false);
+            if (allTickers == null) return;
 
-            double sum = 0;
-            int cnt = 0;
-            for (int i = 0; i < patterns.Length && i < count; i++) {
-                sum += patterns[i].Value;
-                cnt++;
-            }
+            int minTime = Period * PeriodCount;
 
-            return sum / cnt;
-        }
+            for (int i = 0; i < allTickers.Count; i++) {
+                if (allTickers[i].Count == 0) continue;
 
-        public static void MapPattern (TickerChangedEventArgs[] tickers, Trading.MarketAction action) {
-            Pattern p = GeneratePattern(tickers);
-            MapPattern(p, action);
-        }
-        public static void MapPattern (Pattern p, Trading.MarketAction action) {
-            if (p == null) return;
+                CurrencyPair currPair = allTickers[i].First().CurrencyPair;
+                long startTime = allTickers[i].First().Timestamp + minTime;
+                int startIndex = 0;
 
-            // add the pattern
-            if (PatternRepo == null) PatternRepo = new Dictionary<Trading.MarketAction, List<Pattern>>();
+                long lastTimestamp = 0;
 
-            List<Pattern> lp;
-            if (PatternRepo.TryGetValue(action, out lp)) {
-                lp.Add(p);
-            }
-            else {
-                lp = new List<Pattern>();
-                lp.Add(p);
-                PatternRepo.Add(action, lp);
-            }
-        }
+                for (int j = 0; j < allTickers[i].Count; j++) {
+                    long currTimestamp = allTickers[i][j].Timestamp;
 
-        public static KeyValuePair<Pattern, double>[] ComparePattern (TickerChangedEventArgs[] tickers, Trading.MarketAction type) {
-            Pattern p = GeneratePattern(tickers);
-            return ComparePattern(p, type);
-        }
-        public static KeyValuePair<Pattern, double>[] ComparePattern (Pattern p, Trading.MarketAction type) {
-            if (PatternRepo == null) return null;
-            if (p == null) return null;
+                    if (currTimestamp > startTime) break;
 
-            List<Pattern> patterns;
-            if (PatternRepo.TryGetValue(type, out patterns)) {
-                List<KeyValuePair<Pattern, double>> lst = new List<KeyValuePair<Pattern, double>>();
-
-                for (int i = 0; i < patterns.Count; i++) {
-                    double dist = p.GetDistance(patterns[i]);
-                    if (!double.IsNaN(dist)) lst.Add(new KeyValuePair<Pattern, double>(patterns[i], p.GetDistance(patterns[i])));
-                }
-
-                lst.Sort(new Pattern.PatternComparer());
-                return lst.ToArray();
-            }
-            return null;
-        }
-
-        public static Pattern GeneratePattern (TickerChangedEventArgs[] tickers) {
-
-            if (tickers == null || tickers.Length == 0) return null;
-
-            // check if the tickers extend over the standard pattern timeframe
-            long startTime = tickers.First().Timestamp;
-            long endTime = tickers.Last().Timestamp;
-            long breakTime = endTime - (Period * PeriodCount);
-
-            // filter out the unnecessary tickers
-            List<TickerChangedEventArgs> tempTickers = new List<TickerChangedEventArgs>();
-            for (int i = tickers.Length - 1; i >= 0; i--) {
-                if (tickers[i].Timestamp < breakTime) break;
-                tempTickers.Add(tickers[i]);
-            }
-            tempTickers.Reverse();
-            tickers = tempTickers.ToArray();
-
-            startTime = tickers.First().Timestamp;
-            endTime = tickers.Last().Timestamp;
-
-            long fullTimeframe = endTime - startTime;
-
-            // assemble the price movements
-            double[] priceChanges = new double[PeriodCount];
-            int startIndex = 0;
-
-            for (int i = 0; i < PeriodCount; i++) {
-
-                long currStartTime = ((fullTimeframe / PeriodCount) * i) + startTime;
-                long currEndTime = currStartTime + Period;
-
-                double startPrice = tickers[startIndex].MarketData.PriceLast;
-                double endPrice = startPrice;
-
-                for (int j = startIndex; j < tickers.Length; j++) {
-                    TickerChangedEventArgs currTicker = tickers[j];
-
-                    if (currTicker.Timestamp > currEndTime) break;
-
-                    endPrice = currTicker.MarketData.PriceLast;
+                    lastTimestamp = currTimestamp;
                     startIndex = j;
                 }
 
-                double priceChange = ((endPrice - startPrice) / startPrice) * 100;
-                priceChanges[i] = priceChange;
+                int endIndex = allTickers[i].Count - 1;
+                long endTime = allTickers[i][endIndex].Timestamp;
 
+                for (int j = endIndex; j >= 0; j--) {
+                    if (allTickers[i][j].Timestamp + Period < endTime) break;
+                    endIndex = j;
+                }
+
+                List<Pattern> repoList = null;
+                for (int j = 0; j < Repo.Count; j++) {
+                    if (currPair == Repo[j].Key) {
+                        repoList = Repo[j].Value;
+                        break;
+                    }
+                }
+                if (repoList == null) {
+                    repoList = new List<Pattern>();
+                    Repo.Add(new KeyValuePair<CurrencyPair, List<Pattern>>(currPair, repoList));
+                }
+
+                for (int j = startIndex; j < endIndex; j++) {
+                    long currTimestamp = allTickers[i][j].Timestamp;
+
+                    if (j % 1000 == 0) {
+                        float progress = ((float)j / endIndex) * 100;
+                        Console.WriteLine("Progress: " + i + "/" + allTickers.Count + " - " + progress.ToString("F2") + "%");
+                    }
+
+                    if (currTimestamp < lastTimestamp + 5) continue;
+                    lastTimestamp = currTimestamp;
+
+                    Pattern p = BuildPattern(allTickers[i].ToArray(), j, true);
+                    repoList.Add(p);
+                }
+
+                SaveToFile();
+            }
+        }
+
+        public static Pattern BuildPattern (TickerChangedEventArgs[] tickers, int index, bool includeFuture) {
+
+            List<double> movements = new List<double>(GetPatternData(new List<TickerChangedEventArgs>(tickers), index, Period, PeriodCount));
+
+            if (includeFuture) {
+                double futureMove;
+                GetFutureChange(new List<TickerChangedEventArgs>(tickers), index, Period, out futureMove);
+                movements.Add(futureMove);
             }
 
-            return GeneratePattern(priceChanges);
+            return new Pattern(movements.ToArray());
         }
-        public static Pattern GeneratePattern (double[] values) {
-            if (values == null) return null;
-            return new Pattern(values);
+
+        private static bool GetFutureChange (List<TickerChangedEventArgs> tickers, int startIndex, long timespan, out double value) {
+            long endTimestamp = tickers[startIndex].Timestamp + timespan;
+            value = 0;
+
+            double startValue = tickers[startIndex].MarketData.PriceLast;
+            double endValue = startValue;
+
+            for (int i = 0; i < tickers.Count; i++) {
+                if (i == tickers.Count - 1) return false;
+
+                if (tickers[i].Timestamp > endTimestamp) break;
+                endValue = tickers[i].MarketData.PriceLast;
+            }
+
+            value = ((endValue - startValue) / startValue) * 100;
+            return true;
         }
+        private static double[] GetPatternData (List<TickerChangedEventArgs> tickers, int endIndex, long timespans, int periods) {
+
+            double currEndTime = tickers[endIndex].Timestamp;
+            double currStartTime = currEndTime - timespans;
+
+            int currStartIndex = endIndex;
+            int currEndIndex = endIndex;
+
+            List<double> changes = new List<double>();
+
+            for (int i = 0; i < periods; i++) {
+
+                double endValue = tickers[currEndIndex].MarketData.PriceLast;
+                double startValue = endValue;
+
+                for (int j = currEndIndex; j >= 0; j--) {
+                    if (tickers[j].Timestamp < currStartTime) break;
+
+                    startValue = tickers[j].MarketData.PriceLast;
+                    currStartIndex = j;
+                }
+
+                changes.Add(((endValue - startValue) / startValue) * 100);
+
+                currEndTime = currStartTime;
+                currStartTime = currEndTime - timespans;
+
+                currEndIndex = currStartIndex;
+            }
+
+            changes.Reverse();
+            return changes.ToArray();
+        }
+
+        public static Pattern AnalyzePattern (Pattern p, CurrencyPair pair) {
+            if (Repo == null) return null;
+            // return the closest pattern to p
+
+            // compare with every pattern in the repo
+
+            List<KeyValuePair<Pattern, double>> data = new List<KeyValuePair<Pattern, double>>();
+
+            List<Pattern> repoList = null;
+            for (int j = 0; j < Repo.Count; j++) {
+                if (pair == Repo[j].Key) {
+                    repoList = Repo[j].Value;
+                    break;
+                }
+            }
+            if (repoList == null) return null;
+
+            for (int i = 0; i < repoList.Count; i++) {
+                double d = p.GetDistance(repoList[i]);
+                data.Add(new KeyValuePair<Pattern, double>(repoList[i], d));
+            }
+
+            // sort based on distance (similarity)
+
+            data.Sort(new Data.PatternMatching.Pattern.PatternComparer());
+
+            return data.First().Key;
+        }
+        
+        // ------------------------------------------
+        // file save + load
+        // ------------------------------------------
 
         public static void SaveToFile () {
-            if (PatternRepo == null) return;
-            
+            if (Repo == null) return;
+
             // save mapped patterns (cumulative, don't overwrite existing)
 
-            KeyValuePair<Trading.MarketAction, List<Pattern>>[] patterns = PatternRepo.ToArray();
-            if (patterns == null) return;
-
-            for (int i = 0; i < patterns.Length; i++) {
+            for (int i = 0; i < Repo.Count; i++) {
                 List<string> lines = new List<string>();
-                for (int j = 0; j < patterns[i].Value.Count; j++) {
-                    lines.Add(patterns[i].Value[j].ToString());
+                for (int j = 0; j < Repo[i].Value.Count; j++) {
+                    lines.Add(Repo[i].Value[j].ToString());
                 }
-                Utility.FileManager.SaveFile(PatternsDirectory + "/" + PatternsFilenamePrefix + patterns[i].Key.ToString(), lines.ToArray());
+
+                Utility.FileManager.SaveFile(PatternsDirectory + "/" + PatternsFilenamePrefix + "_" + Repo[i].Key + ".data", lines.ToArray());
             }
         }
         public static void LoadFromFile () {
-            if (PatternRepo == null) PatternRepo = new Dictionary<Trading.MarketAction, List<Pattern>>();
-            PatternRepo.Clear();
+            if (Repo == null) Repo = new List<KeyValuePair<CurrencyPair, List<Pattern>>>();
+            Repo.Clear();
 
-            string buyFilename = PatternsDirectory + "/" + PatternsFilenamePrefix + Trading.MarketAction.Buy.ToString();
-            string sellFilename = PatternsDirectory + "/" + PatternsFilenamePrefix + Trading.MarketAction.Sell.ToString();
+            string[] allFiles = System.IO.Directory.GetFiles(PatternsDirectory);
+            for (int i = 0; i < allFiles.Length; i++) {
+                allFiles[i] = allFiles[i].Replace("\\", "/");
+                string cleaned = allFiles[i].Split('/').Last();
 
-            string[] lines = Utility.FileManager.ReadFile(buyFilename);
-            if (lines != null) {
-                List<Pattern> patterns = new List<Pattern>();
-                for (int i = 0; i < lines.Length; i++) {
-                    Pattern p = Pattern.Parse(lines[i]);
-                    patterns.Add(p);
+                if (cleaned.StartsWith(PatternsFilenamePrefix)) {
+
+                    string currPairBase = cleaned.Split('_')[1];
+                    string currPairQuote = cleaned.Split('_').Last().Split('.').First();
+
+                    CurrencyPair pair = new CurrencyPair(currPairBase, currPairQuote);
+
+                    string[] lines = Utility.FileManager.ReadFile(allFiles[i]);
+                    if (lines != null) {
+                        List<Pattern> patterns = new List<Pattern>();
+                        for (int j = 0; j < lines.Length; j++) {
+                            Pattern p = Pattern.Parse(lines[j]);
+                            patterns.Add(p);
+                        }
+                        Repo.Add(new KeyValuePair<CurrencyPair, List<Pattern>>(pair, patterns));
+                    }
                 }
-                PatternRepo.Add(Trading.MarketAction.Buy, patterns);
-            }
-
-            lines = Utility.FileManager.ReadFile(sellFilename);
-            if (lines != null) {
-                List<Pattern> patterns = new List<Pattern>();
-                for (int i = 0; i < lines.Length; i++) {
-                    Pattern p = Pattern.Parse(lines[i]);
-                    patterns.Add(p);
-                }
-                PatternRepo.Add(Trading.MarketAction.Sell, patterns);
             }
         }
     }

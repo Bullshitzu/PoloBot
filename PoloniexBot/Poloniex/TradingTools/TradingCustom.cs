@@ -50,15 +50,17 @@ namespace PoloniexAPI.TradingTools {
             }
         }
 
-        private ulong PostOrder (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote) {
+        private ulong PostOrder (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote, bool modifyPrice = true) {
 
-            switch (type) {
-                case OrderType.Buy:
-                    pricePerCoin *= 1.05f;
-                    break;
-                case OrderType.Sell:
-                    pricePerCoin *= 0.95f;
-                    break;
+            if (modifyPrice) {
+                switch (type) {
+                    case OrderType.Buy:
+                        pricePerCoin *= 1.05f;
+                        break;
+                    case OrderType.Sell:
+                        pricePerCoin *= 0.95f;
+                        break;
+                }
             }
 
             if (amountQuote <= PoloniexBot.Trading.Rules.RuleMinimumBaseAmount.MinimumAllowedTradeAmount) return 0;
@@ -141,8 +143,8 @@ namespace PoloniexAPI.TradingTools {
             return Task.Factory.StartNew(() => GetTrades(currencyPair, Helper.DateTimeUnixEpochStart, DateTime.MaxValue));
         }
 
-        public Task<ulong> PostOrderAsync (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote) {
-            return Task.Factory.StartNew(() => PostOrder(currencyPair, type, pricePerCoin, amountQuote));
+        public Task<ulong> PostOrderAsync (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote, bool modifyPrice = true) {
+            return Task.Factory.StartNew(() => PostOrder(currencyPair, type, pricePerCoin, amountQuote, modifyPrice));
         }
 
         public Task<ulong> MoveOrderAsync (ulong orderId, double pricePerCoin, double amountQuote) {

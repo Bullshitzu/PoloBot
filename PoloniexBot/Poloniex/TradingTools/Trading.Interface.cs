@@ -24,7 +24,7 @@ namespace PoloniexAPI {
         /// <param name="type">Type of the order.</param>
         /// <param name="pricePerCoin">The price to trade your coins at, compared to the base currency.</param>
         /// <param name="amountQuote">The amount of quote you want to trade.</param>
-        Task<ulong> PostOrderAsync (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote);
+        Task<ulong> PostOrderAsync (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote, bool modifyPrice = true);
 
         /// <summary>Moves an existing order.</summary>
         /// <param name="orderNumber">The ID number of the order you want to move.</param>

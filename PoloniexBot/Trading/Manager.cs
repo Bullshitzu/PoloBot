@@ -148,7 +148,9 @@ namespace PoloniexBot.Trading {
             // Refresh market data
             // -------------
 
-            KeyValuePair<CurrencyPair, double>[] allPairs = Data.VarAnalysis.GetBestCurrencyPairs();
+            List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> allPairs = 
+                new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
+
 
             Thread.Sleep(1000);
 
@@ -159,35 +161,43 @@ namespace PoloniexBot.Trading {
             // Add pairs with open positions
             // -------------
 
-            for (int i = 0; i < allPairs.Length; i++) {
+            for (int i = 0; i < allPairs.Count; i++) {
                 if (Utility.TradeTracker.GetOpenPosition(allPairs[i].Key) > 0) {
                     AddPair(allPairs[i].Key);
                 }
             }
 
             // -------------
-            // Filter BTC base
+            // Filter BTC base and low price
             // -------------
 
-            for (int i = 0; i < allPairs.Length && tradePairs.Count < 20; i++) {
-                if (allPairs[i].Key.BaseCurrency != "BTC") continue;
-                if (allPairs[i].Value < 1.01) continue;
-                
-                TickerChangedEventArgs lastTicker = Data.Store.GetLastTicker(allPairs[i].Key);
-                if (lastTicker == null) {
-                    Console.WriteLine("ERROR - NO TICKERS FOUND FOR "+allPairs[i].Key);
+            for (int i = 0; i < allPairs.Count; i++) {
+                if (allPairs[i].Key.BaseCurrency != "BTC") {
+                    allPairs.RemoveAt(i);
+                    i--;
                     continue;
                 }
-                if (lastTicker.MarketData.PriceLast < 0.00001) continue;
 
-                bool added = false;
-                for (int j = 0; j < tradePairs.Count; j++) {
-                    if (allPairs[i].Key == tradePairs[j].GetPair()) {
-                        added = true;
-                        break;
-                    }
+                if (allPairs[i].Value.PriceLast < 0.00001) {
+                    allPairs.RemoveAt(i);
+                    i--;
+                    continue;
                 }
+            }
 
+            // -------------
+            // Sort by volume
+            // -------------
+
+            allPairs.Sort(new Utility.MarketDataComparerVolume());
+            allPairs.Reverse();
+
+            // -------------
+            // Skip a few too active ones and select
+            // -------------
+
+            for (int i = 0; i < allPairs.Count && tradePairs.Count < 20; i++) {
+                bool added = false;
                 while (!added) {
                     try {
                         Console.WriteLine("Adding " + allPairs[i] + " to traded pairs");

@@ -100,7 +100,7 @@ namespace PoloniexBot.Data {
         public static void PullAndGenerate (CurrencyPair pair) {
 
             long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
-            long startTimestamp = endTimestamp - (24 * 3600 * 7);
+            long startTimestamp = endTimestamp - (24 * 3600 * 3);
             endTimestamp = startTimestamp;
 
             while (true) {
@@ -111,7 +111,7 @@ namespace PoloniexBot.Data {
                         System.IO.File.Delete(filename);
                     }
 
-                    for (int i = 0; i < 7; i++) {
+                    for (int i = 0; i < 3; i++) {
 
                         CLI.Manager.PrintNote("Generating day " + i + "/7 for " + pair);
 

@@ -45,6 +45,20 @@ namespace PoloniexBot.Data.Predictors {
             rs.variables.Add("delta2", new ResultSet.Variable("Delta 2", delta2, 8));
             rs.variables.Add("delta3", new ResultSet.Variable("Delta 3", delta3, 8));
 
+            // direction of sma
+
+            ResultSet[] allResults = GetAllResults();
+            int startIndex = allResults.Length - 5;
+            if (startIndex < 0) startIndex = 0;
+
+            double startSma = SMA;
+
+            ResultSet.Variable tempVar;
+            if (allResults[startIndex].variables.TryGetValue("sma", out tempVar)) startSma = tempVar.value;
+
+            double dir = ((SMA - startSma) / startSma) * 100;
+            rs.variables.Add("dir", new ResultSet.Variable("Dir.", dir, 8));
+
         }
 
         private double GetSMA (TickerChangedEventArgs[] tickers, long timeframe) {

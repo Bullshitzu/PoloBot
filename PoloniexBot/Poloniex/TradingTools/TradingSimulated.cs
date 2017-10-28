@@ -39,7 +39,7 @@ namespace PoloniexAPI.TradingTools {
             return (IList<ITrade>)data;
         }
 
-        private ulong PostOrder (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote) {
+        private ulong PostOrder (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote, bool modifyPrice = true) {
             PoloniexBot.Simulation.PostOrder(currencyPair, type, pricePerCoin, amountQuote);
             return 1;
         }
@@ -62,8 +62,8 @@ namespace PoloniexAPI.TradingTools {
             return Task.Factory.StartNew(() => GetTrades(currencyPair, Helper.DateTimeUnixEpochStart, DateTime.MaxValue));
         }
 
-        public Task<ulong> PostOrderAsync (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote) {
-            return Task.Factory.StartNew(() => PostOrder(currencyPair, type, pricePerCoin, amountQuote));
+        public Task<ulong> PostOrderAsync (CurrencyPair currencyPair, OrderType type, double pricePerCoin, double amountQuote, bool modifyPrice = true) {
+            return Task.Factory.StartNew(() => PostOrder(currencyPair, type, pricePerCoin, amountQuote, modifyPrice));
         }
 
         public Task<bool> DeleteOrderAsync (CurrencyPair currencyPair, ulong orderId) {

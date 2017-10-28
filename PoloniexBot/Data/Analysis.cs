@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PoloniexAPI;
 
 namespace PoloniexBot.Data {
     public static class Analysis {
@@ -16,6 +17,21 @@ namespace PoloniexBot.Data {
                     sum += values[i];
                 }
                 return sum / values.Length;
+            }
+            public static TickerChangedEventArgs[] SimpleMovingAverage (TickerChangedEventArgs[] tickers) {
+
+                List<TickerChangedEventArgs> smoothedTickers = new List<TickerChangedEventArgs>();
+
+                List<double> prices = new List<double>();
+                for (int i = 0; i < tickers.Length; i++) {
+                    prices.Add(tickers[i].MarketData.PriceLast);
+                    while (prices.Count > 20) prices.RemoveAt(0);
+
+                    double currPrice = Analysis.MovingAverage.SimpleMovingAverage(prices.ToArray());
+                    smoothedTickers.Add(new TickerChangedEventArgs(tickers[i], currPrice));
+                }
+
+                return smoothedTickers.ToArray();
             }
 
             public static double SmoothedMovingAverage (double[] values) {

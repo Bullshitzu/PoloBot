@@ -16,11 +16,14 @@ namespace Utility {
             DoneTrades = new List<TradeData>();
         }
 
-        public struct TradeData {
+        public class TradeData {
             public CurrencyPair pair;
             public double buyAmountQuote;
             public double buyPrice;
             public long buyTimestamp;
+
+            public ulong orderID;
+            public double orderPrice;
 
             public bool sold;
             public double openPrice;
@@ -52,6 +55,9 @@ namespace Utility {
                 percentGain = 0;
                 netGainBtc = 0;
                 cumulativeNetGainBtc = 0;
+
+                orderID = 0;
+                orderPrice = 0;
             }
             public TradeData (TradeData old, double newOpenPrice) {
 
@@ -72,6 +78,9 @@ namespace Utility {
                 percentGain = 0;
                 netGainBtc = 0;
                 cumulativeNetGainBtc = 0;
+
+                orderID = 0;
+                orderPrice = 0;
             }
             public TradeData (TradeData old, double amountQuote, double price, long timestamp) {
 
@@ -92,20 +101,26 @@ namespace Utility {
                 percentGain = ((sellPrice - buyPrice) / buyPrice) * 100;
                 netGainBtc = (sellAmountQuote * sellPrice) - (buyAmountQuote * buyPrice);
                 cumulativeNetGainBtc = 0;
+
+                orderID = 0;
+                orderPrice = 0;
             }
 
             public static TradeData Parse (string[] lines) {
-                if (lines == null || lines.Length != 4) throw new FormatException("Error Parsing TradeData!");
+                if (lines == null || lines.Length != 6) throw new FormatException("Error Parsing TradeData!");
 
                 CurrencyPair pair = CurrencyPair.Parse(lines[0]);
                 long timestamp = long.Parse(lines[1]);
                 double amountQuote = double.Parse(lines[2]);
                 double price = double.Parse(lines[3]);
 
+                ulong orderID = ulong.Parse(lines[4]);
+                double orderPrice = double.Parse(lines[5]);
+
                 return new TradeData(pair, amountQuote, price, timestamp);
             }
             public string[] Serialize () {
-                string[] data = { pair.ToString(), buyTimestamp.ToString(), buyAmountQuote.ToString("F8"), buyPrice.ToString("F8") };
+                string[] data = { pair.ToString(), buyTimestamp.ToString(), buyAmountQuote.ToString("F8"), buyPrice.ToString("F8"), orderID.ToString(), orderPrice.ToString("F8")};
                 return data;
             }
         }
@@ -173,10 +188,10 @@ namespace Utility {
 
             int cnt = int.Parse(lines[0]);
             for (int i = 0; i < cnt; i++) {
-                string[] vars = new string[4];
+                string[] vars = new string[6];
 
-                for (int j = 0; j < 4; j++) {
-                    vars[j] = lines[i * 4 + 1 + j];
+                for (int j = 0; j < 6; j++) {
+                    vars[j] = lines[i * 6 + 1 + j];
                 }
 
                 TradeData td = TradeData.Parse(vars);
@@ -226,6 +241,41 @@ namespace Utility {
                 if (Trades[i].pair == pair) {
                     Trades[i] = new TradeData(Trades[i], price);
                     UpdateTradesGUI();
+                    return;
+                }
+            }
+        }
+
+        internal static ulong GetOrderID (CurrencyPair pair) {
+            if (Trades == null) return 0;
+
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    return Trades[i].orderID;
+                }
+            }
+
+            return 0;
+        }
+        internal static double GetOrderPrice (CurrencyPair pair) {
+            if (Trades == null) return 0;
+
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    return Trades[i].orderPrice;
+                }
+            }
+
+            return 0;
+        }
+
+        internal static void SetOrderData (CurrencyPair pair, ulong id, double price) {
+            if (Trades == null) return;
+
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    Trades[i].orderID = id;
+                    Trades[i].orderPrice = price;
                     return;
                 }
             }

@@ -14,6 +14,13 @@ namespace PoloniexAPI {
             MarketData = marketData;
         }
 
+        public TickerChangedEventArgs (TickerChangedEventArgs ticker, double newPrice) {
+            this.CurrencyPair = ticker.CurrencyPair;
+            this.Timestamp = ticker.Timestamp;
+            this.ChangeLast = ticker.ChangeLast;
+            this.MarketData = new MarketData(newPrice);
+        }
+
         public int CompareTo (TickerChangedEventArgs other) {
             return this.Timestamp.CompareTo(other.Timestamp);
         }

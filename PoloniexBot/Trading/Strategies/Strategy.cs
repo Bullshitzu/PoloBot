@@ -14,7 +14,11 @@ namespace PoloniexBot.Trading.Strategies {
         internal int TradeTimeBlock = 30;
         internal long LastSellTime = 0;
 
+        internal int PullTickerHistoryHours = 7;
+
         internal const double minTradeAmount = 0.0001;
+
+        internal const double Satoshi = 0.00000001;
 
         internal double VolatilityScore = 0;
 
@@ -38,6 +42,9 @@ namespace PoloniexBot.Trading.Strategies {
             EvaluateTrade();
         }
         public void ForceSell () {
+
+            Console.WriteLine("FORCE SELL ON "+pair);
+
             ruleForce.currentResult = Rules.RuleResult.Sell;
             EvaluateTrade();
         }
@@ -47,6 +54,8 @@ namespace PoloniexBot.Trading.Strategies {
             TradeTimeBlock = 30;
             LastSellTime = 0;
             VolatilityScore = 0;
+
+            Data.Store.SetTickerStoreTime(pair, PullTickerHistoryHours * 3600 + 30);
         }
     }
 }

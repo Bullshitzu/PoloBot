@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleADX : TradeRule {
 
-        public static double Trigger = 50;
-        private double localTrigger = 50;
+        public static double Trigger = 75;
+        private double localTrigger = 75;
 
         public RuleADX () {
             localTrigger = Trigger;
@@ -28,7 +28,7 @@ namespace PoloniexBot.Trading.Rules {
 
             if (!values.TryGetValue("adx", out adx)) throw new VariableNotIncludedException();
 
-            if (adx < localTrigger) {
+            if (adx > localTrigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }

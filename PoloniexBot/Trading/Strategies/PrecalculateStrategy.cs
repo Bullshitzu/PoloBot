@@ -51,7 +51,7 @@ namespace PoloniexBot.Trading.Strategies {
 
         public void Setup () {
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, null);
+            GUI.GUIManager.AddStrategyScreenPair(this.pair);
 
             // ----------------------------------
 
@@ -187,7 +187,7 @@ namespace PoloniexBot.Trading.Strategies {
             // Update GUI
             // ----------------
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, ruleVariables);
+            GUI.GUIManager.UpdateStrategyScreenPair(this.pair, ruleVariables);
 
             // ----------------
             // Custom rule logic

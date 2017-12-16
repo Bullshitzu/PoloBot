@@ -77,7 +77,7 @@ namespace PoloniexAPI.WalletTools {
 
         public void Reset () {
             balances = new Dictionary<string, IBalance>();
-            Balance b = new Balance(0.00015, 0, 0.00015);
+            Balance b = new Balance(0.001, 0, 0.001);
             balances.Add("BTC", b);
         }
 

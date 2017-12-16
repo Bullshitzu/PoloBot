@@ -9,7 +9,7 @@ using PoloniexBot.Trading.Rules;
 namespace PoloniexBot.Trading.Strategies {
     class PriceTrend : Strategy {
         public PriceTrend (CurrencyPair pair) : base(pair) {
-            Windows.Controls.StrategyScreen.drawVariables = new string[] { "priceDelta1", "priceDelta2" };
+            
         }
 
         // ------------------------------
@@ -39,7 +39,7 @@ namespace PoloniexBot.Trading.Strategies {
 
         public override void Setup (bool simulated = false) {
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, null);
+            GUI.GUIManager.AddStrategyScreenPair(this.pair);
 
             // ----------------------------------
 
@@ -114,6 +114,8 @@ namespace PoloniexBot.Trading.Strategies {
             predictorPriceDelta.Recalculate(tickers);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
+
+            GUI.GUIManager.SetPairSummary(this.pair, tickers, lastTicker.MarketData.Volume24HourBase);
         }
         public override void EvaluateTrade () {
 
@@ -142,12 +144,6 @@ namespace PoloniexBot.Trading.Strategies {
             if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta1", out tempVar)) delta1 = tempVar.value;
             if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta2", out tempVar)) delta2 = tempVar.value;
             if (predictorPriceDelta.GetLastResult().variables.TryGetValue("priceDelta3", out tempVar)) delta3 = tempVar.value;
-
-            // -------------------------------
-            // Update the trade history screen
-            // -------------------------------
-
-            // todo: update trade history
 
             // -------------------------------------------
             // Compile all the rule variables into a dictionary
@@ -201,7 +197,7 @@ namespace PoloniexBot.Trading.Strategies {
             // Update GUI
             // ----------------
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, ruleVariables);
+            GUI.GUIManager.UpdateStrategyScreenPair(this.pair, ruleVariables);
 
             // ----------------
             // Custom rule logic

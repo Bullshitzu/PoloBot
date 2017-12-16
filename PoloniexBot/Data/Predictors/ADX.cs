@@ -9,9 +9,9 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class ADX : Predictor {
 
-        private int localPeriod = 60;
+        private int localPeriod = 600;
 
-        public ADX (CurrencyPair pair, int period = 60) : base(pair) {
+        public ADX (CurrencyPair pair, int period = 600) : base(pair) {
             localPeriod = period;
         }
 

@@ -9,9 +9,30 @@ using PoloniexAPI;
 namespace PoloniexBot.Data {
     public static class VariableAnalysis {
 
+        public static void AnalyzeAllPairs () {
+
+            List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> markets =
+                new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
+
+            markets.Sort(new Utility.MarketDataComparerVolume());
+            markets.Reverse();
+
+            for (int i = 0; i < markets.Count; i++) {
+                if (markets[i].Key.BaseCurrency == "BTC") {
+                    try {
+                        DoFullAnalysis(markets[i].Key);
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e.Message + " - " + e.StackTrace);
+                    }
+                }
+            }
+
+        }
+
         public static void DoFullAnalysis (CurrencyPair pair) {
 
-            // pull 7 days of data and precalculate
+            // pull N days of data and precalculate
             Precalculation.PullAndGenerate(pair);
 
             Thread.Sleep(1500);

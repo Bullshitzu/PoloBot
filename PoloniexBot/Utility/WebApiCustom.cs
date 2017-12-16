@@ -15,8 +15,9 @@ namespace Utility {
 
             APICallTracker.ReportApiCall();
 
+            Log.Manager.LogNetSent(address);
+
             try {
-                StreamReader reader;
                 UriBuilder builder = new UriBuilder(address);
                 HttpWebRequest request = WebRequest.CreateHttp(builder.Uri);
 
@@ -24,9 +25,13 @@ namespace Utility {
                 request.KeepAlive = false;
                 request.ProtocolVersion = HttpVersion.Version10;
 
-                reader = new StreamReader(request.GetResponse().GetResponseStream());
-                string s = reader.ReadToEnd();
-                reader.Close();
+                string s;
+                using (StreamReader reader = new StreamReader(request.GetResponse().GetResponseStream())) {
+                    s = reader.ReadToEnd();
+                }
+
+                Log.Manager.LogNetReceived(s);
+
                 return s;
             }
             catch (Exception e) {
@@ -84,6 +89,7 @@ namespace Utility {
                 return tradeList;
             }
             catch (Exception e) {
+                Utility.ErrorLog.ReportErrorSilent("Error parsing JSON to trades - " + e.Message + " - " + json);
                 return null;
             }
         }

@@ -5,22 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PoloniexBot.Trading.Rules {
-    class RuleUSDTBTC : TradeRule {
+    class RuleBaseCurrTrend : TradeRule {
 
+        public static double CurrValue = double.MaxValue;
         public static double Trigger = -0.05;
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double usdtBtcMeanRev;
-
-            if (!values.TryGetValue("usdtBtcMACD", out usdtBtcMeanRev)) throw new VariableNotIncludedException("usdtBtcMACD");
-
-            if (usdtBtcMeanRev < Trigger) {
+            if (CurrValue < Trigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }
-            currentResult = RuleResult.None;
-
+            currentResult = RuleResult.BlockBuy;
         }
     }
 }

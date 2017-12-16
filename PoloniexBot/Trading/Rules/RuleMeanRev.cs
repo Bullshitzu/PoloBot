@@ -7,15 +7,15 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleMeanRev : TradeRule {
 
-        public static double BuyTrigger = 2.5; // price N% below 3hour mean
-        private double localTrigger = 2.5;
+        public static double BuyTrigger = -4; // price N% below 3hour mean
+        private double localTrigger = -4;
 
         public RuleMeanRev () {
             localTrigger = BuyTrigger;
         }
 
         public RuleMeanRev (double trigger) {
-            localTrigger = trigger;
+            localTrigger = trigger * 1;
         }
 
         public override void SetTrigger (params double[] values) {
@@ -28,7 +28,7 @@ namespace PoloniexBot.Trading.Rules {
 
             if (!values.TryGetValue("meanRev", out meanRev)) throw new VariableNotIncludedException("meanRev");
 
-            if (meanRev > localTrigger) {
+            if (meanRev < localTrigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }

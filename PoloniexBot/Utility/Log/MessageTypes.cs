@@ -18,8 +18,30 @@ namespace Utility.Log.MessageTypes {
         }
 
         public override string ToString () {
-            return Time.ToString() + " - " + (Sent ? "OUTGOING" : "INCOMING") + " - " + Message;
+            return Time.ToString() + " - " + (Sent ? "SENT" : "RECEIVED") + " - " + Message;
+        }
+    }
+
+    class ErrorMessage {
+
+        public DateTime Time;
+        public string Message;
+        public string StackTrace = "";
+        private bool hasStackTrace = false;
+
+        public ErrorMessage (string Message) {
+            this.Time = DateTime.Now;
+            this.Message = Message;
+        }
+        public ErrorMessage (string Message, string StackTrace) {
+            this.Time = DateTime.Now;
+            this.Message = Message;
+            this.StackTrace = StackTrace;
+            this.hasStackTrace = true;
         }
 
+        public override string ToString () {
+            return Time.ToString() + " - " + Message + (hasStackTrace ? " - " + StackTrace : "");
+        }
     }
 }

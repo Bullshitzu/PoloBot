@@ -16,6 +16,16 @@ namespace PoloniexBot.Trading {
 
         private Strategies.Strategy strategy;
 
+        private bool BlockedTrade = false;
+
+        public void SetBlockedTrade (bool state) {
+            this.BlockedTrade = state;
+
+            GUI.GUIManager.BlockPair(pair, state);
+
+
+        }
+
         #region Basic Setup
         // All executed in the main thread
 
@@ -27,19 +37,30 @@ namespace PoloniexBot.Trading {
             this.pair = pair;
             invokeQueue = new TSList<InvokePair>();
 
-            this.strategy = strategy;
+            if (pair.BaseCurrency == "USDT" && pair.QuoteCurrency == "BTC") strategy = new Strategies.BaseCurrTrendUpdater(pair);
+            else this.strategy = strategy;
         }
         public TPManager (CurrencyPair pair) {
             this.pair = pair;
             invokeQueue = new TSList<InvokePair>();
 
-            strategy = new Strategies.MeanRevADX(pair);
+            switch (pair.BaseCurrency) {
+                case "USDT":
+                    strategy = new Strategies.BaseCurrTrendUpdater(pair);
+                    break;
+                case "ETH":
+                    strategy = new Strategies.BubbleSave(pair);
+                    break;
+                default:
+                    strategy = new Strategies.MeanRevADX(pair);
+                    break;
+            }
         }
         public void Setup (bool pullTickerHistory = true) {
 
             if (pullTickerHistory) {
                 Console.WriteLine("Pulling ticker history");
-                Data.Store.PullTickerHistory(pair);
+                Data.Store.PullTickerHistory(pair, strategy.PullTickerHistoryHours);
                 Console.WriteLine("done");
             }
 
@@ -182,7 +203,9 @@ namespace PoloniexBot.Trading {
             strategy.UpdatePredictors();
         }
         public void EvaluateAndTrade (params object[] parameters) {
-            strategy.EvaluateTrade();
+            if (!BlockedTrade) {
+                strategy.EvaluateTrade();
+            }
         }
 
         // base -> quote = amount / price

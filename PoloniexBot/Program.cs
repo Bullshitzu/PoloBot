@@ -14,7 +14,7 @@ namespace PoloniexBot {
             try {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Form1());
+                Application.Run(new MainForm());
             }
             catch (Exception e) {
                 Console.WriteLine("Caught " + e.Message + "\n" + e.StackTrace);

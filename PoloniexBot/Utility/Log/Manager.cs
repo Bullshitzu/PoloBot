@@ -13,13 +13,16 @@ namespace Utility.Log {
         const string FolderName = "Logs";
 
         const string FilenameNetLog = "Net.log";
+        const string FilenameErrorLog = "Error.log";
 
         static TSList<MessageTypes.NetMessage> NetMessages;
+        static TSList<MessageTypes.ErrorMessage> ErrorMessages;
 
         static Thread thread;
 
         public static void Start () {
             NetMessages = new TSList<MessageTypes.NetMessage>();
+            ErrorMessages = new TSList<MessageTypes.ErrorMessage>();
             thread = ThreadManager.Register(Run, "Log", false);
         }
         public static void Stop () {
@@ -29,10 +32,17 @@ namespace Utility.Log {
         static void Run () {
             if (!Directory.Exists(FolderName)) Directory.CreateDirectory(FolderName);
 
+            ErrorMessages.Clear();
+            NetMessages.Clear();
+
+            return;
+            // todo: enable logging?
+            // note: eats HDD memory like mad
+
             while (true) {
 
                 ResolveNetLogs();
-                // note: others here
+                ResolveErrorLogs();
 
                 ThreadManager.ReportAlive("Log.Manager");
                 Thread.Sleep(10);
@@ -62,5 +72,31 @@ namespace Utility.Log {
 
             FileManager.SaveFileConcat(FolderName + "/" + FilenameNetLog, lines.ToArray());
         }
+
+        // ----------------------------------------
+
+        public static void LogError (string message) {
+            ErrorMessages.Add(new MessageTypes.ErrorMessage(message));
+        }
+        public static void LogError (string message, string stackTrace) {
+            ErrorMessages.Add(new MessageTypes.ErrorMessage(message, stackTrace));
+        }
+        static void ResolveErrorLogs () {
+            if (ErrorMessages.Count == 0) return;
+
+            List<string> lines = new List<string>();
+            while (ErrorMessages.Count > 0) {
+
+                lines.Add(ErrorMessages[0].ToString());
+                lines.Add("");
+                lines.Add("");
+
+                ErrorMessages.RemoveAt(0);
+            }
+
+            FileManager.SaveFileConcat(FolderName + "/" + FilenameErrorLog, lines.ToArray());
+        }
+
+
     }
 }

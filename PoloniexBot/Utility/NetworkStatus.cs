@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Net.NetworkInformation;
 using PoloniexBot;
-using PoloniexBot.Windows;
 
 namespace Utility {
     class NetworkStatus {
@@ -34,32 +33,43 @@ namespace Utility {
 
                     if (reply.Status == IPStatus.Success) {
                         lastReplyTime = reply.RoundtripTime;
+
+                        PoloniexBot.GUI.GUIManager.UpdatePing(lastReplyTime);
+
                         missCount = 0;
                         if (netDown) {
-                            GUIManager.errorWindow.Invoke((System.Windows.Forms.MethodInvoker)delegate {
-                                GUIManager.errorWindow.ShowResolved("Network Restored");
-                            });
+                            PoloniexBot.GUI.GUIManager.SetNetworkStateMessage(PoloniexBot.GUI.MainSummaryGraph.NetworkMessageState.Restored);
                             netDown = false;
+
+                            new Task(() => {
+                                ClientManager.Reboot();
+                            }).Start();
+
                             ErrorLog.ReportLog("Network Restored");
-                            ClientManager.Reboot();
                         }
                     }
                     else if (!netDown) {
                         missCount++;
+
+                        PoloniexBot.GUI.GUIManager.UpdatePing(0);
+
                         if (missCount > 3) {
-                            // netDown = true;
+                            netDown = true;
+                            PoloniexBot.GUI.GUIManager.SetNetworkStateMessage(PoloniexBot.GUI.MainSummaryGraph.NetworkMessageState.Down);
                             ErrorLog.ReportError("Network Down");
-                            // BootDown();
                         }
                     }
                 }
                 catch (PingException) {
                     missCount++;
+
+                    PoloniexBot.GUI.GUIManager.UpdatePing(0);
+
                     if (missCount > 3) {
                         if (!netDown) {
-                            // netDown = true;
+                            netDown = true;
+                            PoloniexBot.GUI.GUIManager.SetNetworkStateMessage(PoloniexBot.GUI.MainSummaryGraph.NetworkMessageState.Down);
                             ErrorLog.ReportError("Network Down");
-                            // BootDown();
                         }
                     }
                 }
@@ -67,16 +77,6 @@ namespace Utility {
                 ThreadManager.ReportAlive("NetworkStatus");
                 Thread.Sleep(1000);
             }
-        }
-
-        public static void BootDown () {
-
-            ClientManager.Shutdown();
-            netDown = true;
-
-            GUIManager.errorWindow.Invoke((System.Windows.Forms.MethodInvoker)delegate {
-                GUIManager.errorWindow.ShowError("Network Down");
-            });
         }
     }
 }

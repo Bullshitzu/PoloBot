@@ -31,6 +31,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>IconBlue.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Castle.Core">
       <HintPath>..\packages\Castle.Core.3.3.1\lib\net45\Castle.Core.dll</HintPath>
@@ -160,14 +163,75 @@
     <Compile Include="Data\Store.cs" />
     <Compile Include="Data\VarAnalysis.cs" />
     <Compile Include="Data\VariableAnalysis.cs" />
+    <Compile Include="GUI\ApiCallsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\ApiCallsControl.Designer.cs">
+      <DependentUpon>ApiCallsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GUI\ConsoleControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\CPUGraph.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\Helper.cs" />
+    <Compile Include="GUI\MainSummaryGraph.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\MemoryControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\NetworkGraph.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\PairSummariesManager.cs" />
+    <Compile Include="GUI\PairSummaryControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\PingControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\StatusControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\StatusControl.Designer.cs">
+      <DependentUpon>StatusControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GUI\StrategyControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\Style\Colors.cs" />
+    <Compile Include="GUI\Style\Fonts.cs" />
+    <Compile Include="GUI\Templates\BaseButton.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\Templates\BaseControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\Templates\BaseControl.Designer.cs">
+      <DependentUpon>BaseControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GUI\ThreadsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\TradeHistoryControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="GUI\TradeHistoryControl.Designer.cs">
+      <DependentUpon>TradeHistoryControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GUI\WalletControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Poloniex\LiveTools\LiveCustom.cs" />
     <Compile Include="Poloniex\TradingTools\TradingCustom.cs" />
     <Compile Include="Trading\DataStructures.cs" />
-    <Compile Include="Trading\GiverOrders.cs" />
     <Compile Include="Trading\Manager.cs" />
     <Compile Include="Trading\Rules\Rule.cs" />
     <Compile Include="Trading\Rules\RuleADX.cs" />
     <Compile Include="Trading\Rules\RuleBollinger.cs" />
+    <Compile Include="Trading\Rules\RuleBubbleSave.cs" />
     <Compile Include="Trading\Rules\RuleBuyBand.cs" />
     <Compile Include="Trading\Rules\RuleCh24.cs" />
     <Compile Include="Trading\Rules\RuleDelayAllTrade.cs" />
@@ -185,6 +249,7 @@
     <Compile Include="Trading\Rules\RuleMinimumQuoteAmountOrders.cs" />
     <Compile Include="Trading\Rules\RuleMinimumQuoteAmountPost.cs" />
     <Compile Include="Trading\Rules\RuleMinimumSellPrice.cs" />
+    <Compile Include="Trading\Rules\RuleMinimumSellPriceDump.cs" />
     <Compile Include="Trading\Rules\RuleMinimumSellPriceGiver.cs" />
     <Compile Include="Trading\Rules\RulePriceDelta.cs" />
     <Compile Include="Trading\Rules\RulePatternMatch.cs" />
@@ -193,7 +258,10 @@
     <Compile Include="Trading\Rules\RuleStopLoss.cs" />
     <Compile Include="Trading\Rules\RuleStopLossSpread.cs" />
     <Compile Include="Trading\Rules\RuleUSDTBTC.cs" />
+    <Compile Include="Trading\Strategies\BaseCurrTrendUpdater.cs" />
     <Compile Include="Trading\Strategies\Bollinger.cs" />
+    <Compile Include="Trading\Strategies\BubbleSave.cs" />
+    <Compile Include="Trading\Strategies\LowPriceTrading.cs" />
     <Compile Include="Trading\Strategies\MeanRev.cs" />
     <Compile Include="Trading\Strategies\MeanRevDX.cs" />
     <Compile Include="Trading\Strategies\MeanRevADX.cs" />
@@ -212,11 +280,11 @@
     <Compile Include="Utility\DrawingHelper.cs" />
     <Compile Include="Utility\ErrorLog.cs" />
     <Compile Include="Utility\FileManager.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Poloniex\General\ApiWebClient.cs" />
     <Compile Include="Poloniex\General\Authenticator.cs" />
@@ -270,161 +338,22 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Simulation.cs" />
     <Compile Include="Utility\DateTimeHelper.cs" />
+    <Compile Include="Utility\FunStuff.cs" />
     <Compile Include="Utility\Log\Manager.cs" />
     <Compile Include="Utility\Log\MessageTypes.cs" />
     <Compile Include="Utility\MarketDataComparer.cs" />
     <Compile Include="Utility\Math.cs" />
     <Compile Include="Utility\ModuleMonitor.cs" />
     <Compile Include="Utility\NetworkStatus.cs" />
+    <Compile Include="Utility\PerformanceMonitor.cs" />
     <Compile Include="Utility\ThreadManager.cs" />
     <Compile Include="Utility\TradeTracker.cs" />
     <Compile Include="Utility\TSDictionary.cs" />
     <Compile Include="Utility\TSList.cs" />
     <Compile Include="Utility\WebApiCustom.cs" />
-    <Compile Include="Windows\ChartWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\ChartWindow.Designer.cs">
-      <DependentUpon>ChartWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\ButtonSimple.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\ButtonSimple.Designer.cs">
-      <DependentUpon>ButtonSimple.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\ChartScreen.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\ChartScreen.Designer.cs">
-      <DependentUpon>ChartScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\MultiThreadControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\MultiThreadControl.Designer.cs">
-      <DependentUpon>MultiThreadControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\PerformanceScreen.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\PerformanceScreen.Designer.cs">
-      <DependentUpon>PerformanceScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\PredictorsScreen.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\PredictorsScreen.Designer.cs">
-      <DependentUpon>PredictorsScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\StrategyScreen.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\StrategyScreen.Designer.cs">
-      <DependentUpon>StrategyScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\TradeHistoryScreen.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\TradeHistoryScreen.Designer.cs">
-      <DependentUpon>TradeHistoryScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\WalletScreen.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\WalletScreen.Designer.cs">
-      <DependentUpon>WalletScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\ErrorWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\ErrorWindow.Designer.cs">
-      <DependentUpon>ErrorWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\FormCustom.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\PerformanceWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\PerformanceWindow.Designer.cs">
-      <DependentUpon>PerformanceWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\PredictorsWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\PredictorsWindow.Designer.cs">
-      <DependentUpon>PredictorsWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\ScoreWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\ScoreWindow.Designer.cs">
-      <DependentUpon>ScoreWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\ConsoleWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\ConsoleWindow.Designer.cs">
-      <DependentUpon>ConsoleWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\Chatbox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\Chatbox.Designer.cs">
-      <DependentUpon>Chatbox.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\ConsoleScreen.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\ConsoleScreen.Designer.cs">
-      <DependentUpon>ConsoleScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\ScoreScreen.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\ScoreScreen.Designer.cs">
-      <DependentUpon>ScoreScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\Controls\TickerFeed.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Windows\Controls\TickerFeed.Designer.cs">
-      <DependentUpon>TickerFeed.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\GUIManager.cs" />
-    <Compile Include="Windows\AccountStatusWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\AccountStatusWindow.Designer.cs">
-      <DependentUpon>AccountStatusWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\StrategyWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\StrategyWindow.Designer.cs">
-      <DependentUpon>StrategyWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\TickerFeedWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\TickerFeedWindow.Designer.cs">
-      <DependentUpon>TickerFeedWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\TradeHistoryWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\TradeHistoryWindow.Designer.cs">
-      <DependentUpon>TradeHistoryWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Windows\TrollboxWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Windows\TrollboxWindow.Designer.cs">
-      <DependentUpon>TrollboxWindow.cs</DependentUpon>
-    </Compile>
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="GUI\GUIManager.cs" />
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -436,48 +365,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="Windows\AccountStatusWindow.resx">
-      <DependentUpon>AccountStatusWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\ChartWindow.resx">
-      <DependentUpon>ChartWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\Controls\ButtonSimple.resx">
-      <DependentUpon>ButtonSimple.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\Controls\PerformanceScreen.resx">
-      <DependentUpon>PerformanceScreen.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\Controls\TradeHistoryScreen.resx">
-      <DependentUpon>TradeHistoryScreen.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\ErrorWindow.resx">
-      <DependentUpon>ErrorWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\PerformanceWindow.resx">
-      <DependentUpon>PerformanceWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\PredictorsWindow.resx">
-      <DependentUpon>PredictorsWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\ScoreWindow.resx">
-      <DependentUpon>ScoreWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\ConsoleWindow.resx">
-      <DependentUpon>ConsoleWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\StrategyWindow.resx">
-      <DependentUpon>StrategyWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\TickerFeedWindow.resx">
-      <DependentUpon>TickerFeedWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\TradeHistoryWindow.resx">
-      <DependentUpon>TradeHistoryWindow.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Windows\TrollboxWindow.resx">
-      <DependentUpon>TrollboxWindow.cs</DependentUpon>
-    </EmbeddedResource>
     <None Include="packages.config" />
     <Compile Include="Poloniex\General\Authenticator.Interface.cs" />
     <None Include="Properties\Settings.settings">
@@ -493,7 +380,10 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="IconBlue.ico" />
+    <None Include="Resources\kat_dragon_tattoo_vector_by_valliantcreations.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

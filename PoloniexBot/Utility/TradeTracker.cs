@@ -10,10 +10,11 @@ namespace Utility {
 
         const string DirectoryName = "Logs";
         const string OpenPositionsFilename = "openPositions.data";
+        const string ClosedPositionsFilename = "closedPositions.data";
 
         static TradeTracker () {
-            Trades = new List<TradeData>();
-            DoneTrades = new List<TradeData>();
+            Trades = new TSList<TradeData>();
+            DoneTrades = new TSList<TradeData>();
         }
 
         public class TradeData {
@@ -35,6 +36,8 @@ namespace Utility {
             public double percentGain;
             public double netGainBtc;
             public double cumulativeNetGainBtc;
+
+            public double stopLossPercent;
 
             public TradeData (CurrencyPair pair, double amountQuote, double price, long timestamp) {
                 
@@ -58,6 +61,8 @@ namespace Utility {
 
                 orderID = 0;
                 orderPrice = 0;
+
+                stopLossPercent = double.MinValue;
             }
             public TradeData (TradeData old, double newOpenPrice) {
 
@@ -75,12 +80,14 @@ namespace Utility {
                 sellPrice = 0;
                 sellTimestamp = 0;
 
-                percentGain = 0;
+                percentGain = ((openPrice - buyPrice) / buyPrice) * 100;
                 netGainBtc = 0;
                 cumulativeNetGainBtc = 0;
 
                 orderID = 0;
                 orderPrice = 0;
+
+                stopLossPercent = old.stopLossPercent;
             }
             public TradeData (TradeData old, double amountQuote, double price, long timestamp) {
 
@@ -104,29 +111,49 @@ namespace Utility {
 
                 orderID = 0;
                 orderPrice = 0;
+
+                stopLossPercent = old.stopLossPercent;
             }
 
             public static TradeData Parse (string[] lines) {
-                if (lines == null || lines.Length != 6) throw new FormatException("Error Parsing TradeData!");
+                if (lines == null || lines.Length != 7) throw new FormatException("Error Parsing TradeData!");
 
                 CurrencyPair pair = CurrencyPair.Parse(lines[0]);
-                long timestamp = long.Parse(lines[1]);
-                double amountQuote = double.Parse(lines[2]);
-                double price = double.Parse(lines[3]);
+                long buyTimestamp = long.Parse(lines[1]);
+                double buyAmountQuote = double.Parse(lines[2]);
+                double buyPrice = double.Parse(lines[3]);
 
-                ulong orderID = ulong.Parse(lines[4]);
-                double orderPrice = double.Parse(lines[5]);
+                long sellTimestamp = long.Parse(lines[4]);
+                double sellAmountQuote = double.Parse(lines[5]);
+                double sellPrice = double.Parse(lines[6]);
 
-                return new TradeData(pair, amountQuote, price, timestamp);
+                TradeData temp = new TradeData(pair, buyAmountQuote, buyPrice, buyTimestamp);
+
+                if (sellTimestamp > 0) {
+                    temp.sellTimestamp = sellTimestamp;
+                    temp.sellAmountQuote = sellAmountQuote;
+                    temp.sellPrice = sellPrice;
+
+                    temp.percentGain = ((sellPrice - buyPrice) / buyPrice) * 100;
+                    temp.netGainBtc = (sellAmountQuote * sellPrice) - (buyAmountQuote * buyPrice);
+                }
+                return temp;
             }
             public string[] Serialize () {
-                string[] data = { pair.ToString(), buyTimestamp.ToString(), buyAmountQuote.ToString("F8"), buyPrice.ToString("F8"), orderID.ToString(), orderPrice.ToString("F8")};
+                string[] data = { 
+                    pair.ToString(), 
+                    buyTimestamp.ToString(), 
+                    buyAmountQuote.ToString("F8"), 
+                    buyPrice.ToString("F8"),
+                    sellTimestamp.ToString(),
+                    sellAmountQuote.ToString("F8"),
+                    sellPrice.ToString("F8") };
                 return data;
             }
         }
         
-        private static List<TradeData> Trades;
-        private static List<TradeData> DoneTrades;
+        private static TSList<TradeData> Trades;
+        private static TSList<TradeData> DoneTrades;
 
         public static void ClearAll () {
             if (Trades != null) Trades.Clear();
@@ -138,7 +165,7 @@ namespace Utility {
             ReportBuy(pair, amountQuote, price, DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now));
         }
         public static void ReportBuy (CurrencyPair pair, double amountQuote, double price, long timestamp) {
-            if (Trades == null) Trades = new List<TradeData>();
+            if (Trades == null) Trades = new TSList<TradeData>();
 
             TradeData tempData = new TradeData(pair, amountQuote, price, timestamp);
             Trades.Add(tempData);
@@ -153,7 +180,7 @@ namespace Utility {
         }
         public static void ReportSell (CurrencyPair pair, double amountQuote, double price, long timestamp) {
             if (Trades == null) return;
-            if (DoneTrades == null) DoneTrades = new List<TradeData>();
+            if (DoneTrades == null) DoneTrades = new TSList<TradeData>();
 
             for (int i = 0; i < Trades.Count; i++) {
                 if (Trades[i].pair == pair) {
@@ -170,36 +197,72 @@ namespace Utility {
             if (Trades == null) return;
             if (PoloniexBot.ClientManager.Simulate) return;
 
+            List<string> linesOpen = SerializeTrades(Trades);
+            List<string> linesClosed = SerializeTrades(DoneTrades);
+
+            FileManager.SaveFile(DirectoryName + "/" + OpenPositionsFilename, linesOpen.ToArray());
+            FileManager.SaveFile(DirectoryName + "/" + ClosedPositionsFilename, linesClosed.ToArray());
+        }
+        private static List<string> SerializeTrades (TSList<TradeData> trades) {
+            if (trades == null) return new List<string>();
+
             List<string> lines = new List<string>();
-            lines.Add(Trades.Count.ToString());
-            for (int i = 0; i < Trades.Count; i++) {
-                lines.AddRange(Trades[i].Serialize());
+
+            List<TradeData> filteredTrades = new List<TradeData>(trades.ToArray());
+            while (filteredTrades.Count > 12) filteredTrades.RemoveAt(0);
+
+            lines.Add(filteredTrades.Count.ToString());
+            for (int i = 0; i < filteredTrades.Count; i++) {
+                lines.AddRange(filteredTrades[i].Serialize());
             }
 
-            FileManager.SaveFile(DirectoryName + "/" + OpenPositionsFilename, lines.ToArray());
+            return lines;
         }
+
         public static void LoadData () {
             if (PoloniexBot.ClientManager.Simulate) return;
 
-            string[] lines = FileManager.ReadFile(DirectoryName + "/" + OpenPositionsFilename);
-            if(lines == null) return;
+            string[] lines;
 
-            if (Trades == null) Trades = new List<TradeData>();
+            lines = FileManager.ReadFile(DirectoryName + "/" + OpenPositionsFilename);
+            if (lines != null) Trades = DeserializeTrades(lines);
 
-            int cnt = int.Parse(lines[0]);
-            for (int i = 0; i < cnt; i++) {
-                string[] vars = new string[6];
+            lines = FileManager.ReadFile(DirectoryName + "/" + ClosedPositionsFilename);
+            if (lines != null) {
+                TSList<TradeData> tempClosedTrades = DeserializeTrades(lines);
 
-                for (int j = 0; j < 6; j++) {
-                    vars[j] = lines[i * 6 + 1 + j];
+                for (int i = 0; i < tempClosedTrades.Count; i++) {
+                    tempClosedTrades[i] = new TradeData(
+                        tempClosedTrades[i], 
+                        tempClosedTrades[i].sellAmountQuote, 
+                        tempClosedTrades[i].sellPrice, 
+                        tempClosedTrades[i].sellTimestamp);
                 }
 
-                TradeData td = TradeData.Parse(vars);
-                Trades.Add(td);
-
+                DoneTrades = tempClosedTrades;
             }
 
             UpdateTradesGUI();
+        }
+        private static TSList<TradeData> DeserializeTrades (string[] lines) {
+            if (lines == null) return null;
+
+            TSList<TradeData> tempTrades = new TSList<TradeData>();
+
+            int cnt = int.Parse(lines[0]);
+            for (int i = 0; i < cnt; i++) {
+                string[] vars = new string[7];
+
+                for (int j = 0; j < 7; j++) {
+                    vars[j] = lines[i * 7 + 1 + j];
+                }
+
+                TradeData td = TradeData.Parse(vars);
+                tempTrades.Add(td);
+
+            }
+
+            return tempTrades;
         }
 
         private static void CleanupOpenTrades () {
@@ -207,7 +270,7 @@ namespace Utility {
         }
 
         private static void UpdateTradesGUI () {
-            PoloniexBot.Windows.GUIManager.tradeHistoryWindow.tradeHistoryScreen.UpdateTrades(Trades.ToArray(), DoneTrades.ToArray());
+            PoloniexBot.GUI.GUIManager.UpdateTradeHistory(Trades, DoneTrades);
         }
 
         public static double GetOpenPosition (CurrencyPair pair) {
@@ -240,6 +303,18 @@ namespace Utility {
             for (int i = 0; i < Trades.Count; i++) {
                 if (Trades[i].pair == pair) {
                     Trades[i] = new TradeData(Trades[i], price);
+                    UpdateTradesGUI();
+                    return;
+                }
+            }
+        }
+
+        public static void UpdateStopLoss (CurrencyPair pair, double stopLoss) {
+            if (Trades == null) return;
+
+            for (int i = 0; i < Trades.Count; i++) {
+                if (Trades[i].pair == pair) {
+                    Trades[i].stopLossPercent = stopLoss;
                     UpdateTradesGUI();
                     return;
                 }

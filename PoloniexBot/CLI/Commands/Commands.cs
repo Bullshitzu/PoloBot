@@ -8,21 +8,36 @@ namespace PoloniexBot.CLI {
     class CommandImplementations {
         public static void Help (string[] parameters) {
             for (int i = 0; i < Manager.commands.Length; i++) {
-                Manager.PrintNote(Manager.commands[i].ToString());
+                Manager.PrintNoHeader(Manager.commands[i].ToString());
             }
         }
         public static void Clear (string[] parameters) {
             Manager.ClearWindow();
         }
-        public static void Stop (string[] parameters) {
-            throw new NotImplementedException();
+
+        public static void Block (string[] parameters) {
+            if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
+
+            string param = parameters[1].Trim().ToLower();
+
+            if (param == "all") Trading.Manager.BlockAll();
+            else {
+                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].Trim().ToUpper());
+                Trading.Manager.BlockPair(pair);
+            }
         }
         public static void Resume (string[] parameters) {
-            throw new NotImplementedException();
+            if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
+
+            string param = parameters[1].Trim().ToLower();
+
+            if (param == "all") Trading.Manager.ResumeAll();
+            else {
+                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].Trim().ToUpper());
+                Trading.Manager.ResumePair(pair);
+            }
         }
-        public static void Cease (string[] parameters) {
-            throw new NotImplementedException();
-        }
+
         public static void Refresh (string[] parameters) {
             Utility.ThreadManager.Register(() => {
                 Trading.Manager.Stop();
@@ -48,22 +63,18 @@ namespace PoloniexBot.CLI {
         public static void ForceBuy (string[] parameters) {
             if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
 
-            Utility.ThreadManager.Register(() => {
-                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
-                if (!Trading.Manager.ForceBuy(pair)) {
-                    throw new Exception("Specified currency does not exist");
-                }
-            }, "Force Buy", true);
+            PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+            if (!Trading.Manager.ForceBuy(pair)) {
+                throw new Exception("Specified currency does not exist");
+            }
         }
         public static void ForceSell (string[] parameters) {
             if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
 
-            Utility.ThreadManager.Register(() => {
-                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
-                if (!Trading.Manager.ForceSell(pair)) {
-                    throw new Exception("Specified currency does not exist");
-                }
-            }, "Force Sell", true);
+            PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+            if (!Trading.Manager.ForceSell(pair)) {
+                throw new Exception("Specified currency does not exist");
+            }
         }
 
         public static void Simulate (string[] parameters) {
@@ -77,6 +88,32 @@ namespace PoloniexBot.CLI {
                     // todo: run something ?
 
                 }, "Simulation", false);
+            }
+        }
+
+        public static void MarkPair (string[] parameters) {
+            if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
+
+            Utility.ThreadManager.Register(() => {
+                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+                GUI.GUIManager.MarkPairUser(pair);
+            }, "Mark Pair", false);
+        }
+        public static void UnmarkPair (string[] parameters) {
+            if (parameters == null || parameters.Length != 2) throw new Exception("Wrong Parameters");
+
+            Utility.ThreadManager.Register(() => {
+                PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
+                GUI.GUIManager.UnmarkPairUser(pair);
+            }, "Unmark Pair", false);
+        }
+
+        // -----------------------------------------------
+        // Fun stuff
+
+        public static void PrintDragon (string[] parameters) {
+            for (int i = 0; i < Utility.FunStuff.ASCIIArmadillo.Length; i++) {
+                Manager.PrintNoHeader(Utility.FunStuff.ASCIIArmadillo[i]);
             }
         }
     }

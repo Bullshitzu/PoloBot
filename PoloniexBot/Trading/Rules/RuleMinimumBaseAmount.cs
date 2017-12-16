@@ -16,7 +16,7 @@ namespace PoloniexBot.Trading.Rules {
 
             if (!values.TryGetValue("baseAmountTradable", out baseAmount)) throw new VariableNotIncludedException();
 
-            if (baseAmount < MinimumTradeAmount) {
+            if (baseAmount < MinimumAllowedTradeAmount) {
                 currentResult = RuleResult.BlockBuy;
                 return;
             }

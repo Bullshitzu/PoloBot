@@ -10,6 +10,8 @@ namespace PoloniexBot.Trading.Rules {
         public static double MaxBandSize = 2.5;
 
         public static double PriceTriggerMult = 1; //  0.83892454;
+        
+        public double PriceRiseOffset = 0;
 
         public override void Recalculate (Dictionary<string, double> values) {
 
@@ -38,8 +40,8 @@ namespace PoloniexBot.Trading.Rules {
                 return;
             }
 
-            double sellPriceTrigger = 0.003339 * (Math.Pow(maximumPriceDeltaPercent, 2)) + 0.04984 * maximumPriceDeltaPercent + 0.3677;
-
+            double sellPriceTrigger = 0.003339 * (Math.Pow(maximumPriceDeltaPercent, 2)) + 0.04984 * maximumPriceDeltaPercent + 0.8677 + PriceRiseOffset;
+            
             if (sellPriceTrigger > MaxBandSize) sellPriceTrigger = MaxBandSize;
             if (sellPriceTrigger < 0) sellPriceTrigger = 0;
 

@@ -10,13 +10,6 @@ namespace PoloniexBot.Trading.Strategies {
     class PatternMatching : Strategy {
 
         public PatternMatching (CurrencyPair pair) : base(pair) {
-            Windows.Controls.StrategyScreen.drawVariables = new string[] { "buySignal" };
-            Windows.Controls.StrategyScreen.minVariables = new double[] {
-                0
-            };
-            Windows.Controls.StrategyScreen.maxVariables = new double[] {
-                0.6
-            };
         }
 
         // ------------------------------
@@ -66,7 +59,7 @@ namespace PoloniexBot.Trading.Strategies {
 
         public override void Setup (bool simulate = false) {
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, null);
+            GUI.GUIManager.AddStrategyScreenPair(this.pair);
 
             // ----------------------------------
 
@@ -150,6 +143,8 @@ namespace PoloniexBot.Trading.Strategies {
             predictorPatternMatch.Recalculate(tickers);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
+
+            GUI.GUIManager.SetPairSummary(this.pair, tickers, lastTicker.MarketData.Volume24HourBase);
         }
 
         public override void EvaluateTrade () {
@@ -181,12 +176,6 @@ namespace PoloniexBot.Trading.Strategies {
             if (predictorPatternMatch.GetLastResult().variables.TryGetValue("result", out tempVar)) buySignal = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("min", out tempVar)) minPrice = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("max", out tempVar)) maxPrice = tempVar.value;
-
-            // -------------------------------
-            // Update the trade history screen
-            // -------------------------------
-
-            // todo: update trade history
 
             // -------------------------------------------
             // Compile all the rule variables into a dictionary
@@ -240,7 +229,7 @@ namespace PoloniexBot.Trading.Strategies {
             // Update GUI
             // ----------------
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, ruleVariables);
+            GUI.GUIManager.UpdateStrategyScreenPair(this.pair, ruleVariables);
 
             // ----------------
             // Custom rule logic

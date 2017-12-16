@@ -13,7 +13,7 @@ namespace PoloniexBot {
         static string keysFilename = "settings/APIKeys.file";
         public static PoloniexClient client;
 
-        public static bool Simulate = false;
+        public static bool Simulate = true;
         public static bool Training = false;
 
         static string[] LoadApiKey () {
@@ -43,10 +43,15 @@ namespace PoloniexBot {
             if (Simulate) {
                 CLI.Manager.PrintNote("Initializing Simulated Client");
                 client = new PoloniexClient(apiKey[0], apiKey[1], true);
+
+                if (Training) GUI.GUIManager.SetEnvironment(GUI.GUIManager.Environment.Development);
+                else GUI.GUIManager.SetEnvironment(GUI.GUIManager.Environment.Simulation);
             }
             else {
                 CLI.Manager.PrintNote("Initializing Live Client");
                 client = new PoloniexClient(apiKey[0], apiKey[1], false);
+
+                GUI.GUIManager.SetEnvironment(GUI.GUIManager.Environment.Live);
             }
 
             // Clock
@@ -71,68 +76,56 @@ namespace PoloniexBot {
                 }
             }
 
-            // Pattern Repository
-
-            CLI.Manager.PrintNote("Loading Pattern Repository");
-            Data.PatternMatching.Manager.LoadFromFile();
-
-            Thread.Sleep(1000);
-
             // Training
 
             if (Training) {
                 ThreadManager.Register(() => {
 
-                    // Data.VarAnalysis.AnalyzeAll();
                     
-                    KeyValuePair<CurrencyPair, double>[] allPairs = Data.VarAnalysis.GetBestCurrencyPairs();
-                    // KeyValuePair<CurrencyPair, double>[] allPairs = Data.ANN.Training.GetNetworkAccuracy().ToArray();
+                    // Data.VariableAnalysis.AnalyzeAllPairs();
+                    /*
+                    List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> allPairs =
+                        new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
 
-
-
-
+                    allPairs.Sort(new Utility.MarketDataComparerVolume());
+                    allPairs.Reverse();
 
                     long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
-                    long startTimestamp = 1508878554; // endTimestamp - (24 * 3600 * 2);
-                    
+                    long startTimestamp = endTimestamp - (24 * 3600 * 7);
+
                     int added = 0;
-                    for (int i = 0; i < allPairs.Length && added < 20; i++) {
+
+                    Data.Store.PullTickerHistory(new CurrencyPair("USDT", "BTC"), startTimestamp, endTimestamp);
+
+                    for (int i = 0; i < allPairs.Count; i++) {
                         if (allPairs[i].Key.BaseCurrency == "BTC") {
+
+                            if (Data.Store.GetLastTicker(allPairs[i].Key).MarketData.PriceLast < 0.00001) continue;
+
                             try {
+
                                 Console.WriteLine("Pulling " + allPairs[i]);
                                 Data.Store.PullTickerHistory(allPairs[i].Key, startTimestamp, endTimestamp);
                                 added++;
+                                
                             }
                             catch (Exception e) {
                                 Console.WriteLine(e.Message + "\n" + e.StackTrace);
                             }
 
+                            if (added >= 10) break;
+
                             Thread.Sleep(2000);
                         }
+
                     }
                     
                     Data.Store.SaveTradeData();
-                    
-                    /*
-                    */
 
-                    /*
-                    KeyValuePair<CurrencyPair, double>[] allPairs = Data.ANN.Training.GetNetworkAccuracy().ToArray();
-                    for (int i = 0; i < allPairs.Length; i++) {
-                        try {
-                            Data.VariableAnalysis.DoFullAnalysis(allPairs[i].Key);
-                        }
-                        catch (Exception) { }
-                    }
                     /*
                     */
 
                     Simulation.SimulateAll();
-
-                    // Data.PatternMatching.Manager.BuildPatternDatabase();
-
-                    // Data.ANN.Training.RebuildAllNetworks();
-
 
                 }, "Data Pull", true);
             }
@@ -156,7 +149,6 @@ namespace PoloniexBot {
                 */
                 Thread.Sleep(1000);
 
-
                 Trading.Manager.Start();
                 ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);
             }
@@ -167,7 +159,7 @@ namespace PoloniexBot {
         public static IDictionary<string,PoloniexAPI.WalletTools.IBalance> RefreshWallet () {
             try {
                 IDictionary<string, PoloniexAPI.WalletTools.IBalance> wallet = client.Wallet.GetBalancesAsync().Result;
-                Windows.GUIManager.accountStatusWindow.UpdateBalance(wallet);
+                GUI.GUIManager.UpdateWallet(wallet.ToArray());
                 return wallet;
             }
             catch (Exception e) {
@@ -198,7 +190,6 @@ namespace PoloniexBot {
                     finalData.Add(data[i].Key, data[i].Value);
                 }
                 Data.Store.MarketData = finalData;
-                Windows.GUIManager.tickerFeedWindow.UpdateMarketData();
             }
             catch (Exception e) {
                 ErrorLog.ReportError("Error refreshing market data", e);

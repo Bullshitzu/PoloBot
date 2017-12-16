@@ -54,8 +54,10 @@ namespace PoloniexBot.Trading {
                             updatedPairs.RemoveAll(item => item == currPair);
 
                             if (tradePairs != null && Data.Store.AllowTickerUpdate) {
+
                                 for (int i = 0; i < tradePairs.Count; i++) {
                                     if (tradePairs[i].GetPair() == currPair) {
+
                                         tradePairs[i].InvokeThread(tradePairs[i].UpdatePredictors, null);
                                         tradePairs[i].InvokeThread(tradePairs[i].EvaluateAndTrade, null);
                                         UpdateWalletValue(currPair.QuoteCurrency);
@@ -124,7 +126,9 @@ namespace PoloniexBot.Trading {
 
                     if (!PoloniexAPI.MarketTools.MarketData.Equal(lastTicker.MarketData, data[i].Value)) {
                         TickerChangedEventArgs tempTicker = new TickerChangedEventArgs(data[i].Key, (PoloniexAPI.MarketTools.MarketData)data[i].Value);
-                        Windows.GUIManager.tickerFeedWindow.RecieveMessage(null, tempTicker);
+                        tempTicker.Timestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+                        
+                        Data.Store.AddTickerData(tempTicker);
                     }
                 }
 
@@ -135,6 +139,7 @@ namespace PoloniexBot.Trading {
         }
 
         public static void NotifyTickerUpdate (CurrencyPair pair) {
+
             if (updatedPairs == null) updatedPairs = new Utility.TSList<CurrencyPair>();
             updatedPairs.Add(pair);
         }
@@ -142,7 +147,8 @@ namespace PoloniexBot.Trading {
         public static void RefreshTradePairs () {
 
             ClearAllPairs();
-            Windows.GUIManager.strategyWindow.strategyScreen.ClearData();
+            
+            GUI.GUIManager.ClearStrategyScreen();
 
             // -------------
             // Refresh market data
@@ -158,12 +164,21 @@ namespace PoloniexBot.Trading {
             tradePairs.Clear();
 
             // -------------
+            // Add USDT/BTC
+            // -------------
+
+            AddPair(new CurrencyPair("USDT", "BTC"));
+            AddPair(new CurrencyPair("ETH", "BTC"));
+
+            // -------------
             // Add pairs with open positions
             // -------------
 
             for (int i = 0; i < allPairs.Count; i++) {
                 if (Utility.TradeTracker.GetOpenPosition(allPairs[i].Key) > 0) {
                     AddPair(allPairs[i].Key);
+                    allPairs.RemoveAt(i);
+                    i--;
                 }
             }
 
@@ -172,13 +187,7 @@ namespace PoloniexBot.Trading {
             // -------------
 
             for (int i = 0; i < allPairs.Count; i++) {
-                if (allPairs[i].Key.BaseCurrency != "BTC") {
-                    allPairs.RemoveAt(i);
-                    i--;
-                    continue;
-                }
-
-                if (allPairs[i].Value.PriceLast < 0.00001) {
+                if (allPairs[i].Key.BaseCurrency != "BTC" || allPairs[i].Value.PriceLast < 0.000005) {
                     allPairs.RemoveAt(i);
                     i--;
                     continue;
@@ -193,24 +202,23 @@ namespace PoloniexBot.Trading {
             allPairs.Reverse();
 
             // -------------
-            // Skip a few too active ones and select
+            // Add N pairs
             // -------------
 
-            for (int i = 0; i < allPairs.Count && tradePairs.Count < 20; i++) {
-                bool added = false;
-                while (!added) {
+            for (int i = 0; i < allPairs.Count && tradePairs.Count < 22; i++) {
+                while(true) {
+
+                    Utility.ThreadManager.ReportAlive("Trading.Manager");
+
                     try {
                         Console.WriteLine("Adding " + allPairs[i] + " to traded pairs");
                         AddPair(allPairs[i].Key);
-                        
                         break;
                     }
                     catch (Exception e) {
                         Console.WriteLine(e.Message + "\n" + e.StackTrace);
                         Thread.Sleep(1000);
                     }
-
-                    Utility.ThreadManager.ReportAlive("Trading.Manager");
                 }
             }
         }
@@ -284,25 +292,46 @@ namespace PoloniexBot.Trading {
             }
         }
         
-        public static void CeasePair (CurrencyPair pair) {
-            
+        public static void BlockPair (CurrencyPair pair) {
+            if (SetBlockedState(pair, true)) CLI.Manager.PrintNote("Blocking trade of " + pair.QuoteCurrency + ".");
+            else CLI.Manager.PrintError("Currency " + pair.QuoteCurrency + " not found among actively traded pairs!");
         }
-        public static void CeaseAll () {
-            
-        }
-
-        public static void StopPair (CurrencyPair pair) {
-            
-        }
-        public static void StopAll () {
-            
+        public static void BlockAll () {
+            if (SetBlockedStateAll(true)) CLI.Manager.PrintNote("Blocking trade of all active trade pairs.");
+            else CLI.Manager.PrintError("No active trade pairs!");
         }
         
         public static void ResumePair (CurrencyPair pair) {
-            
+            if (SetBlockedState(pair, false)) CLI.Manager.PrintNote("Resuming trade of " + pair.QuoteCurrency + ".");
+            else CLI.Manager.PrintError("Currency " + pair.QuoteCurrency + " not found among actively traded pairs!");
         }
         public static void ResumeAll () {
-            
+            if (SetBlockedStateAll(false)) CLI.Manager.PrintNote("Resuming trade of all active trade pairs.");
+            else CLI.Manager.PrintError("No active trade pairs!");
+        }
+
+        private static bool SetBlockedState (CurrencyPair pair, bool state) {
+            TPManager[] tpManagers = GetAllTPManagers();
+            if (tpManagers == null) return false;
+
+            for (int i = 0; i < tpManagers.Length; i++) {
+                if (tpManagers[i].GetPair() == pair) {
+                    tpManagers[i].SetBlockedTrade(state);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        private static bool SetBlockedStateAll (bool state) {
+            TPManager[] tpManagers = GetAllTPManagers();
+            if (tpManagers == null) return false;
+
+            for (int i = 0; i < tpManagers.Length; i++) {
+                tpManagers[i].SetBlockedTrade(state);
+            }
+
+            return true;
         }
         
         public static void UpdateWallet () {
@@ -310,8 +339,10 @@ namespace PoloniexBot.Trading {
             try {
                 if (wallet == null) wallet = PoloniexBot.ClientManager.client.Wallet;
                 IDictionary<string, IBalance> tempWallet = wallet.GetBalancesAsync().Result;
-                if (tempWallet != null) walletState = tempWallet;
-                Windows.GUIManager.accountStatusWindow.UpdateBalance(walletState);
+                if (tempWallet != null) {
+                    walletState = tempWallet;
+                    GUI.GUIManager.UpdateWallet(tempWallet.ToArray());
+                }
             }
             catch (Exception e) {
                 Console.WriteLine(e.Message + "\n" + e.StackTrace);
@@ -332,7 +363,7 @@ namespace PoloniexBot.Trading {
                             double currValue = lastTicker.MarketData.PriceLast;
                             double currAmount = balance.QuoteOnOrders + balance.QuoteAvailable;
                             balance.BitcoinValue = currAmount * currValue;
-                            Windows.GUIManager.accountStatusWindow.UpdateBalance(walletState);
+                            GUI.GUIManager.UpdateWallet(walletState.ToArray());
                         }
                     }
                 }
@@ -352,7 +383,7 @@ namespace PoloniexBot.Trading {
                     if (walletState.TryGetValue(currency, out balance)) {
                         double currAmount = balance.QuoteOnOrders + balance.QuoteAvailable;
                         balance.BitcoinValue = currAmount * price;
-                        Windows.GUIManager.accountStatusWindow.UpdateBalance(walletState);
+                        GUI.GUIManager.UpdateWallet(walletState.ToArray());
                     }
                 }
             }
@@ -392,8 +423,6 @@ namespace PoloniexBot.Trading {
             tpMan.Start();
             tradePairs.Add(tpMan);
 
-            Windows.GUIManager.tickerFeedWindow.tickerFeed.MarkPair(pair, true);
-
             return tpMan;
         }
         public static void AddPairLocal (CurrencyPair pair) {
@@ -410,8 +439,6 @@ namespace PoloniexBot.Trading {
 
             tpMan.Start();
             tradePairs.Add(tpMan);
-
-            Windows.GUIManager.tickerFeedWindow.tickerFeed.MarkPair(pair, true);
         }
         public static void RemovePair (CurrencyPair pair) {
             if (tradePairs == null) return;
@@ -423,12 +450,12 @@ namespace PoloniexBot.Trading {
                     break;
                 }
             }
-            Windows.GUIManager.tickerFeedWindow.tickerFeed.MarkPair(pair, false);
+            GUI.GUIManager.RemovePairSummary(pair);
         }
         public static void ClearAllPairs () {
             if (tradePairs == null) return;
 
-            Windows.GUIManager.tickerFeedWindow.tickerFeed.MarkAll(false);
+            GUI.GUIManager.ClearPairSummaries();
 
             for (int i = 0; i < tradePairs.Count; i++) {
                 tradePairs[i].Stop();

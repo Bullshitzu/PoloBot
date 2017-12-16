@@ -10,17 +10,6 @@ namespace PoloniexBot.Trading.Strategies {
     class SpreadTrading : Strategy {
 
         public SpreadTrading (CurrencyPair pair) : base(pair) {
-            Windows.Controls.StrategyScreen.drawVariables = new string[] { "priceDelta1", "priceDelta2", "priceDelta3" };
-            Windows.Controls.StrategyScreen.minVariables = new double[] {
-                RulePriceDelta.Trigger1 - 2,
-                RulePriceDelta.Trigger2 - 2,
-                RulePriceDelta.Trigger3 - 2,
-            };
-            Windows.Controls.StrategyScreen.maxVariables = new double[] {
-                RulePriceDelta.Trigger1 + 2,
-                RulePriceDelta.Trigger2 + 2,
-                RulePriceDelta.Trigger3 + 2,
-            };
         }
 
         // ------------------------------
@@ -70,7 +59,7 @@ namespace PoloniexBot.Trading.Strategies {
 
         public override void Setup (bool simulate = false) {
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, null);
+            GUI.GUIManager.AddStrategyScreenPair(this.pair);
 
             // ----------------------------------
 
@@ -255,7 +244,7 @@ namespace PoloniexBot.Trading.Strategies {
             // Update GUI
             // ----------------
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, ruleVariables);
+            GUI.GUIManager.UpdateStrategyScreenPair(this.pair, ruleVariables);
 
             // ----------------
             // Custom rule logic

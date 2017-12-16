@@ -45,9 +45,8 @@ namespace PoloniexBot.CLI {
             comms.Add(new Command("clear", "Clears the CLI", false, CommandImplementations.Clear));
             comms.Add(new Command("refresh", "Refreshes the trading pair list", CommandImplementations.Refresh));
             
-            comms.Add(new Command("stop", "Cancels orders and stops trading pair(s)", new Parameter[] { new Parameter("pair/all") }, CommandImplementations.Stop));
-            comms.Add(new Command("cease", "Sells and stops trading pair(s)", new Parameter[] { new Parameter("pair/all") }, CommandImplementations.Cease));
-            comms.Add(new Command("resume", "Resumes trading pair(s)", new Parameter[] { new Parameter("pair/all") }, CommandImplementations.Resume));
+            comms.Add(new Command("block", "Cancels orders and stops trading pair(s)", true, new Parameter[] { new Parameter("pair/all") }, CommandImplementations.Block));
+            comms.Add(new Command("resume", "Resumes trading pair(s)", true, new Parameter[] { new Parameter("pair/all") }, CommandImplementations.Resume));
             
             comms.Add(new Command("help", "Shows this help menu", CommandImplementations.Help));
 
@@ -61,6 +60,13 @@ namespace PoloniexBot.CLI {
             comms.Add(new Command("sell", "Forces a manual sell of the specified trade pair", new Parameter[] { new Parameter("currency") }, CommandImplementations.ForceSell));
 
             comms.Add(new Command("simulate", "Runs a simulation on stored ticker data", new Parameter[] { new Parameter("ideal") }, CommandImplementations.Simulate));
+
+            comms.Add(new Command("mark", "Marks a specified trade pair for display", true, new Parameter[] { new Parameter("currency") }, CommandImplementations.MarkPair));
+            comms.Add(new Command("unmark", "Unmarks a specified trade pair for display", true, new Parameter[] { new Parameter("currency") }, CommandImplementations.UnmarkPair));
+
+            // Fun stuff
+
+            comms.Add(new Command("printdragon", "sexy", CommandImplementations.PrintDragon));
 
             commands = new Command[comms.Count];
             for (int i = 0; i < comms.Count; i++) {
@@ -91,8 +97,8 @@ namespace PoloniexBot.CLI {
         }
 
         static void RefreshWindow () {
-            while (messages.Count > 30) messages.RemoveAt(messages.Count - 1);
-            Windows.GUIManager.consoleWindow.SetMessages(messages.ToArray());
+            while (messages.Count > 200) messages.RemoveAt(messages.Count - 1);
+            GUI.GUIManager.SetCLIMessages(messages.ToArray());
         }
         internal static void ClearWindow () {
             messages.Clear();
@@ -100,8 +106,6 @@ namespace PoloniexBot.CLI {
         }
 
         public static void ProcessInput (string text) {
-
-            messages.Insert(0, new Message(MessageType.User, text));
 
             string cleanedInput = text.ToLower().Trim();
             string[] parts = cleanedInput.Split(' ');

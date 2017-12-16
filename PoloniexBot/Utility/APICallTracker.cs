@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using PoloniexBot.Windows;
 
 namespace Utility {
     public static class APICallTracker {
@@ -23,25 +22,35 @@ namespace Utility {
         }
 
         public static void ReportApiCall () {
-            calls.Add(1);
+            double sum = 1;
+            int cnt = 1;
+
+            for (int i = calls.Count-1; i >= 0; i--) {
+                sum += calls[i];
+                cnt++;
+            }
+
+            calls.Add((float)(sum / cnt));
         }
 
         static void Run () {
             while (true) {
 
-                float sum = 0;
                 lock (calls) {
                     for (int i = 0; i < calls.Count; i++) {
-                        sum += calls[i];
-                        calls[i] -= 0.001f;
+                        calls[i] -= 0.1f;
                     }
                 }
                 
                 calls.RemoveAll(HasExpired);
-                callsPerSec = sum / 10f;
+
+                if (calls.Count > 0) callsPerSec = calls.Last();
+                else callsPerSec = 0;
+
+                PoloniexBot.GUI.GUIManager.UpdateApiCalls(callsPerSec);
 
                 ThreadManager.ReportAlive("APICallTracker");
-                Thread.Sleep(10);
+                Thread.Sleep(1000);
             }
         }
 

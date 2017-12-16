@@ -56,8 +56,6 @@ namespace PoloniexAPI.LiveTools {
                 PoloniexBot.Trading.Manager.ClearAllPairs();
 
                 WampChannel.Close();
-
-                Utility.NetworkStatus.BootDown();
             }
             catch (Exception ex) {
                 Console.WriteLine("WAMP EXCEPTION (Stop): " + ex.Message);
@@ -77,8 +75,6 @@ namespace PoloniexAPI.LiveTools {
 
                 PoloniexBot.Trading.Manager.Stop();
                 PoloniexBot.Trading.Manager.ClearAllPairs();
-
-                Utility.NetworkStatus.BootDown();
             }
             catch (Exception ex) {
                 Console.WriteLine("WAMP EXCEPTION (OnConnectionBroken): " + ex.Message);

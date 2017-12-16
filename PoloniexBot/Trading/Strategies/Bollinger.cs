@@ -9,9 +9,7 @@ using PoloniexBot.Trading.Rules;
 namespace PoloniexBot.Trading.Strategies {
     class Bollinger : Strategy {
 
-        public Bollinger (CurrencyPair pair) : base(pair) {
-            Windows.Controls.StrategyScreen.drawVariables = new string[] { "meanRev", "mRevGlobal" };
-        }
+        public Bollinger (CurrencyPair pair) : base(pair) { }
 
         // ------------------------------
 
@@ -45,6 +43,8 @@ namespace PoloniexBot.Trading.Strategies {
         private Data.Predictors.MeanReversion predictorMeanReverse;
 
         public override void Setup (bool simulated = false) {
+
+            GUI.GUIManager.AddStrategyScreenPair(this.pair);
 
             // ----------------------------------
 
@@ -216,7 +216,7 @@ namespace PoloniexBot.Trading.Strategies {
             // Update GUI
             // ----------------
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, ruleVariables);
+            GUI.GUIManager.UpdateStrategyScreenPair(this.pair, ruleVariables);
 
             // ----------------
             // Custom rule logic

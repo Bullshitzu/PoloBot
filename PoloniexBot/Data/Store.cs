@@ -12,7 +12,13 @@ namespace PoloniexBot {
     namespace Data {
         public static class Store {
 
-            public const int TickerStoreTime = 21610; // 6 hours + 10 seconds
+            static Store () {
+                TickerStoreTime = new Dictionary<CurrencyPair, int>();
+            }
+
+            public const int TickerStoreTimeDefault = 97230; // 27 hours + 30 seconds
+
+            public static Dictionary<CurrencyPair, int> TickerStoreTime;
 
             public static void ClearAllData () {
                 if (marketData != null) marketData.Clear();
@@ -46,7 +52,16 @@ namespace PoloniexBot {
             // Ticker Data
             public static List<CurrencyPair> allowUpdatePairs;
             private static TSList<TSList<TickerChangedEventArgs>> tickerData;
-            
+
+            public static void SetTickerStoreTime (CurrencyPair pair, int time) {
+                if (TickerStoreTime == null) TickerStoreTime = new Dictionary<CurrencyPair, int>();
+
+                lock (TickerStoreTime) {
+                    TickerStoreTime.Remove(pair);
+                    TickerStoreTime.Add(pair, time);
+                }
+            }
+
             public static TickerChangedEventArgs[] GetTickerData (CurrencyPair currencyPair) {
                 if (tickerData == null) return null;
                 lock (tickerData) {
@@ -73,18 +88,24 @@ namespace PoloniexBot {
                 return tickers.Last();
             }
 
-            public static void AddTickerData (TickerChangedEventArgs ticker) {
+            public static void AddTickerData (TickerChangedEventArgs ticker, bool ignoreTimeFilter = false) {
                 if (!AllowTickerUpdate) return;
 
                 if (allowUpdatePairs == null) return;
                 if (!allowUpdatePairs.Contains(ticker.CurrencyPair)) return;
-                long deleteTime = ticker.Timestamp - TickerStoreTime;
+
+                int storeTime;
+                lock (TickerStoreTime) {
+                    if (!TickerStoreTime.TryGetValue(ticker.CurrencyPair, out storeTime)) storeTime = TickerStoreTimeDefault;
+                }
+                long deleteTime = ticker.Timestamp - storeTime;
                 lock (tickerData) {
                     for (int i = 0; i < tickerData.Count; i++) {
                         if (tickerData[i] == null) continue;
                         if (tickerData[i].Count == 0) continue;
                         if (tickerData[i][0].CurrencyPair == ticker.CurrencyPair) {
                             while (tickerData[i][0].Timestamp < deleteTime) tickerData[i].RemoveAt(0);
+                            if (!ignoreTimeFilter && ticker.Timestamp - tickerData[i].Last().Timestamp < 5) return;
                             tickerData[i].Add(ticker);
                             Trading.Manager.NotifyTickerUpdate(ticker.CurrencyPair);
                             return;
@@ -164,22 +185,27 @@ namespace PoloniexBot {
                 while (true) {
                     try {
                         List<PoloniexAPI.MarketTools.ITrade> temp = WebApiCustom.GetTrades(pair, (int)startTimestamp, (int)endTimestamp);
-                        
+
                         trades.AddRange(temp);
-                        
+
                         if (temp.Count < 300) break;
 
                         endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(temp.Last().Time);
 
                         failedAttempts = 0;
 
+                        Console.WriteLine(pair + " - SUCCESS");
+
                         ThreadManager.ReportAlive("Data.Store");
                         Thread.Sleep(1500);
                     }
                     catch (Exception e) {
-                        Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                        // Console.WriteLine(e.Message + "\n" + e.StackTrace);
+
+                        Console.WriteLine(pair + " - ERROR");
+
                         failedAttempts++;
-                        if (failedAttempts >= 3) return false;
+                        if (failedAttempts >= 5) return false;
                         Thread.Sleep(4000);
                     }
                 }

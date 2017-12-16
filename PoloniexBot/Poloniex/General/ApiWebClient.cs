@@ -58,10 +58,14 @@ namespace PoloniexAPI {
             Utility.APICallTracker.ReportApiCall();
             try {
                 var request = CreateHttpWebRequest("GET", relativeUrl);
-                return request.GetResponseString();
+
+                string response = request.GetResponseString();
+
+                Utility.Log.Manager.LogNetReceived(response);
+                return response;
             }
             catch (System.Exception e) {
-                PoloniexBot.CLI.Manager.PrintError(e.Message);
+                Utility.ErrorLog.ReportError(e);
                 return "";
             }
         }
@@ -82,10 +86,14 @@ namespace PoloniexAPI {
                     requestStream.Write(postBytes, 0, postBytes.Length);
                 }
 
-                return request.GetResponseString();
+                string response = request.GetResponseString();
+
+                Utility.Log.Manager.LogNetReceived(response);
+
+                return response;
             }
             catch (System.Exception e) {
-                PoloniexBot.CLI.Manager.PrintError(e.Message);
+                Utility.ErrorLog.ReportError(e);
                 return "";
             }
         }
@@ -100,6 +108,7 @@ namespace PoloniexAPI {
         }
 
         private HttpWebRequest CreateHttpWebRequest (string method, string relativeUrl) {
+
             var request = WebRequest.CreateHttp(BaseUrl + relativeUrl);
             request.Method = method;
             request.UserAgent = "Poloniex API .NET v" + Helper.AssemblyVersionString;
@@ -108,6 +117,8 @@ namespace PoloniexAPI {
 
             request.Headers[HttpRequestHeader.AcceptEncoding] = "gzip,deflate";
             request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+            Utility.Log.Manager.LogNetSent(BaseUrl + relativeUrl);
 
             return request;
         }

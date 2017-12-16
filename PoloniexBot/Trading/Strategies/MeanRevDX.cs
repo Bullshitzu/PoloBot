@@ -10,17 +10,7 @@ namespace PoloniexBot.Trading.Strategies {
     class MeanRevDX : Strategy {
 
         public MeanRevDX (CurrencyPair pair) : base(pair) {
-            Windows.Controls.StrategyScreen.drawVariables = new string[] { "priceDelta1", "priceDelta2", "priceDelta3" };
-            Windows.Controls.StrategyScreen.minVariables = new double[] {
-                RulePriceDelta.Trigger1 - 2,
-                RulePriceDelta.Trigger2 - 2,
-                RulePriceDelta.Trigger3 - 2,
-            };
-            Windows.Controls.StrategyScreen.maxVariables = new double[] {
-                RulePriceDelta.Trigger1 + 2,
-                RulePriceDelta.Trigger2 + 2,
-                RulePriceDelta.Trigger3 + 2,
-            };
+
         }
 
         // ------------------------------
@@ -64,7 +54,7 @@ namespace PoloniexBot.Trading.Strategies {
 
         public override void Setup (bool simulate = false) {
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, null);
+            GUI.GUIManager.AddStrategyScreenPair(this.pair);
 
             // ----------------------------------
 
@@ -154,6 +144,8 @@ namespace PoloniexBot.Trading.Strategies {
             predictorDX.Recalculate(tickers);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
+
+            GUI.GUIManager.SetPairSummary(this.pair, tickers, lastTicker.MarketData.Volume24HourBase);
         }
 
         public override void EvaluateTrade () {
@@ -189,12 +181,6 @@ namespace PoloniexBot.Trading.Strategies {
             if (predictorDX.GetLastResult().variables.TryGetValue("delta2", out tempVar)) delta2 = tempVar.value;
             if (predictorDX.GetLastResult().variables.TryGetValue("delta3", out tempVar)) delta3 = tempVar.value;
             
-            // -------------------------------
-            // Update the trade history screen
-            // -------------------------------
-
-            // todo: update trade history
-
             // -------------------------------------------
             // Compile all the rule variables into a dictionary
             // -------------------------------------------
@@ -253,7 +239,7 @@ namespace PoloniexBot.Trading.Strategies {
             // Update GUI
             // ----------------
 
-            PoloniexBot.Windows.GUIManager.strategyWindow.strategyScreen.UpdateData(pair, ruleVariables);
+            GUI.GUIManager.UpdateStrategyScreenPair(this.pair, ruleVariables);
 
             // ----------------
             // Custom rule logic

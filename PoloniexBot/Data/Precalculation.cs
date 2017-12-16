@@ -113,7 +113,7 @@ namespace PoloniexBot.Data {
 
                     for (int i = 0; i < 3; i++) {
 
-                        CLI.Manager.PrintNote("Generating day " + i + "/7 for " + pair);
+                        CLI.Manager.PrintNote("Generating day " + (i + 1) + "/3 for " + pair);
 
                         Data.Store.ClearTickerData();
 
@@ -158,72 +158,9 @@ namespace PoloniexBot.Data {
             markets.Sort(new Utility.MarketDataComparerVolume());
             markets.Reverse();
 
-            List<CurrencyPair> selectedPairs = new List<CurrencyPair>();
-
-            for (int i = 20; i < markets.Count && selectedPairs.Count < 15; i++) {
-                if (markets[i].Key.BaseCurrency == "BTC" && markets[i].Value.PriceLast >= 0.00001) {
-                    selectedPairs.Add(markets[i].Key);
-                }
-            }
-
-            // ------------------------------------------
-
-            long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
-            long startTimestamp = endTimestamp - (24 * 3600 * 30);
-            endTimestamp = startTimestamp;
-
-            long initialTimestamp = startTimestamp;
-
-            for (int i = 0; i < selectedPairs.Count; i++) {
-                while (true) {
-                    try {
-
-                        startTimestamp = initialTimestamp;
-                        endTimestamp = startTimestamp;
-
-                        string filename = "data/pc_" + selectedPairs[i] + ".data";
-                        if (System.IO.File.Exists(filename)) {
-                            System.IO.File.Delete(filename);
-                        }
-
-                        for (int j = 0; j < 30; j++) {
-
-                            CLI.Manager.PrintNote("Generating day " + j + "/30 for " + selectedPairs[i] + " (" + i + "/" + selectedPairs.Count + ")");
-
-                            Data.Store.ClearTickerData();
-
-                            startTimestamp = endTimestamp;
-                            endTimestamp += 24 * 3600;
-
-                            while (true) {
-                                try {
-                                    Data.Store.PullTickerHistory(selectedPairs[i], startTimestamp - 14400, endTimestamp);
-                                    break;
-                                }
-                                catch (Exception e) {
-                                    Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                                }
-
-                                System.Threading.Thread.Sleep(2500);
-                            }
-
-                            Data.Store.SaveTradeData();
-
-                            System.Threading.Thread.Sleep(1500);
-
-                            Generate();
-
-                        }
-
-                        System.Threading.Thread.Sleep(1500);
-
-                        CalculateFuturePriceMovements(selectedPairs[i]);
-
-                        break;
-                    }
-                    catch (Exception e) {
-                        Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                    }
+            for (int i = 20; i < markets.Count; i++) {
+                if (markets[i].Key.BaseCurrency == "BTC") {
+                    PullAndGenerate(markets[i].Key);
                 }
             }
         }

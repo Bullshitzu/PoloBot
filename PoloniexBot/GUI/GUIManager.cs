@@ -125,6 +125,11 @@ namespace PoloniexBot.GUI {
             }
         }
 
+        public static void SetMainMarked (bool state) {
+            mainForm.mainSummaryGraph1.MarkedBorder = state;
+            mainForm.mainSummaryGraph1.Invalidate();
+        }
+
         // --------------------------
 
         public static void AddStrategyScreenPair (PoloniexAPI.CurrencyPair pair) {
@@ -188,20 +193,19 @@ namespace PoloniexBot.GUI {
             UpdatePairSummaries();
         }
 
-        public static void MarkPairUser (PoloniexAPI.CurrencyPair pair) {
+        public static bool MarkPairUser (PoloniexAPI.CurrencyPair pair) {
             if (PairSummariesManager.MarkPairSummary(pair, true)) {
                 UpdatePairSummaries();
-                CLI.Manager.PrintNote("Marking " + pair.QuoteCurrency + " for display priority.");
+                return true;
             }
-            else CLI.Manager.PrintError("Specified currency not found in tracked pairs!");
-            
+            else return false;
         }
-        public static void UnmarkPairUser (PoloniexAPI.CurrencyPair pair) {
+        public static bool UnmarkPairUser (PoloniexAPI.CurrencyPair pair) {
             if (PairSummariesManager.MarkPairSummary(pair, false)) {
                 UpdatePairSummaries();
-                CLI.Manager.PrintNote("Removing " + pair.QuoteCurrency + " from display priority.");
+                return true;
             }
-            else CLI.Manager.PrintError("Specified currency not found in tracked pairs!");
+            else return false;
         }
     }
 }

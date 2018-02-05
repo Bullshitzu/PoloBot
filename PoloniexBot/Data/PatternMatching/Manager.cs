@@ -11,11 +11,13 @@ namespace PoloniexBot.Data.PatternMatching {
 
         // ------------------------------------------
 
-        const int Period = 900; // 5 min
-        const int PeriodCount = 8; // 40m with 5m periods
+        const int Period = 3600; // 1 hour
+        const int PeriodCount = 6; // 6 hours
 
         const string PatternsDirectory = "data";
         const string PatternsFilenamePrefix = "patterns";
+
+        const bool skipPairCheck = true;
 
         // ------------------------------------------
 
@@ -77,7 +79,7 @@ namespace PoloniexBot.Data.PatternMatching {
                         Console.WriteLine("Progress: " + i + "/" + allTickers.Count + " - " + progress.ToString("F2") + "%");
                     }
 
-                    if (currTimestamp < lastTimestamp + 5) continue;
+                    if (currTimestamp < lastTimestamp + 300) continue;
                     lastTimestamp = currTimestamp;
 
                     Pattern p = BuildPattern(allTickers[i].ToArray(), j, true);
@@ -130,17 +132,32 @@ namespace PoloniexBot.Data.PatternMatching {
 
             for (int i = 0; i < periods; i++) {
 
-                double endValue = tickers[currEndIndex].MarketData.PriceLast;
-                double startValue = endValue;
+                double minValue = tickers[currEndIndex].MarketData.PriceLast;
+                double maxValue = minValue;
+
+                bool ascending = false;
 
                 for (int j = currEndIndex; j >= 0; j--) {
                     if (tickers[j].Timestamp < currStartTime) break;
 
-                    startValue = tickers[j].MarketData.PriceLast;
+                    double currValue = tickers[j].MarketData.PriceLast;
+                    if (currValue < minValue) {
+                        minValue = currValue;
+                        ascending = true;
+                    }
+                    if (currValue > maxValue) {
+                        maxValue = currValue;
+                        ascending = false;
+                    }
+
                     currStartIndex = j;
                 }
 
-                changes.Add(((endValue - startValue) / startValue) * 100);
+                double d = (maxValue / minValue) - 1;
+                if (!ascending) d *= -1;
+                d *= 100;
+
+                changes.Add(d);
 
                 currEndTime = currStartTime;
                 currStartTime = currEndTime - timespans;
@@ -152,7 +169,7 @@ namespace PoloniexBot.Data.PatternMatching {
             return changes.ToArray();
         }
 
-        public static Pattern AnalyzePattern (Pattern p, CurrencyPair pair) {
+        public static Pattern[] AnalyzePattern (Pattern p, CurrencyPair pair) {
             if (Repo == null) return null;
             // return the closest pattern to p
 
@@ -161,10 +178,13 @@ namespace PoloniexBot.Data.PatternMatching {
             List<KeyValuePair<Pattern, double>> data = new List<KeyValuePair<Pattern, double>>();
 
             List<Pattern> repoList = null;
-            for (int j = 0; j < Repo.Count; j++) {
-                if (pair == Repo[j].Key) {
-                    repoList = Repo[j].Value;
-                    break;
+            if (skipPairCheck) repoList = Repo.First().Value;
+            else {
+                for (int j = 0; j < Repo.Count; j++) {
+                    if (pair == Repo[j].Key) {
+                        repoList = Repo[j].Value;
+                        break;
+                    }
                 }
             }
             if (repoList == null) return null;
@@ -178,7 +198,12 @@ namespace PoloniexBot.Data.PatternMatching {
 
             data.Sort(new Data.PatternMatching.Pattern.PatternComparer());
 
-            return data.First().Key;
+            Pattern[] returnData = new Pattern[data.Count];
+            for (int i = 0; i < data.Count; i++) {
+                returnData[i] = data[i].Key;
+            }
+
+            return returnData;
         }
         
         // ------------------------------------------

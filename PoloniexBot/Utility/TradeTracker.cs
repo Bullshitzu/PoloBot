@@ -39,9 +39,13 @@ namespace Utility {
 
             public double stopLossPercent;
 
+            public int displayDigits = 8;
+
             public TradeData (CurrencyPair pair, double amountQuote, double price, long timestamp) {
                 
                 // Buy constructor
+
+                if (pair.QuoteCurrency == "BTC") displayDigits = 4;
                 
                 this.pair = pair;
                 this.buyAmountQuote = amountQuote;
@@ -88,6 +92,11 @@ namespace Utility {
                 orderPrice = 0;
 
                 stopLossPercent = old.stopLossPercent;
+
+                if (this.pair.QuoteCurrency == "BTC") {
+                    percentGain *= -1;
+                    displayDigits = 4;
+                }
             }
             public TradeData (TradeData old, double amountQuote, double price, long timestamp) {
 
@@ -113,6 +122,12 @@ namespace Utility {
                 orderPrice = 0;
 
                 stopLossPercent = old.stopLossPercent;
+
+                if (this.pair.QuoteCurrency == "BTC") {
+                    percentGain *= -1;
+                    netGainBtc *= -1;
+                    displayDigits = 4;
+                }
             }
 
             public static TradeData Parse (string[] lines) {
@@ -220,7 +235,7 @@ namespace Utility {
         }
 
         public static void LoadData () {
-            if (PoloniexBot.ClientManager.Simulate) return;
+            // if (PoloniexBot.ClientManager.Simulate) return;
 
             string[] lines;
 

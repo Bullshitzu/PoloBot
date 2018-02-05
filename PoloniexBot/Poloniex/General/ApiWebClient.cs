@@ -56,6 +56,10 @@ namespace PoloniexAPI {
 
         public string QueryString (string relativeUrl) {
             Utility.APICallTracker.ReportApiCall();
+
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             try {
                 var request = CreateHttpWebRequest("GET", relativeUrl);
 
@@ -72,6 +76,10 @@ namespace PoloniexAPI {
 
         public string PostString (string relativeUrl, string postData) {
             Utility.APICallTracker.ReportApiCall();
+
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             try {
                 var request = CreateHttpWebRequest("POST", relativeUrl);
                 request.ContentType = "application/x-www-form-urlencoded";

@@ -56,8 +56,6 @@ namespace PoloniexBot {
             for (int i = 0; i < fullTickerList.Count; i++) {
                 CurrencyPair pair = fullTickerList[i].First().CurrencyPair;
 
-
-
                 Data.Store.allowUpdatePairs.Add(pair);
                 Trading.TPManager currTPMan = new Trading.TPManager(pair);
 
@@ -88,7 +86,7 @@ namespace PoloniexBot {
                 // add first 10000
 
                 int startIndex = 0;
-                long endTime = allTickers.First().Timestamp + 7200;
+                long endTime = allTickers.First().Timestamp + 25200; // 7 hours
 
                 for (int i = 0; i < allTickers.Count; i++) {
                     if (allTickers[i].Timestamp > endTime) break;

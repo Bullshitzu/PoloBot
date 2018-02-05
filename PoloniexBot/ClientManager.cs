@@ -14,7 +14,7 @@ namespace PoloniexBot {
         public static PoloniexClient client;
 
         public static bool Simulate = true;
-        public static bool Training = false;
+        public static bool Training = true;
 
         static string[] LoadApiKey () {
             return FileManager.ReadFile(keysFilename);
@@ -81,9 +81,8 @@ namespace PoloniexBot {
             if (Training) {
                 ThreadManager.Register(() => {
 
-                    
                     // Data.VariableAnalysis.AnalyzeAllPairs();
-                    /*
+
                     List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> allPairs =
                         new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
 
@@ -96,7 +95,7 @@ namespace PoloniexBot {
                     int added = 0;
 
                     Data.Store.PullTickerHistory(new CurrencyPair("USDT", "BTC"), startTimestamp, endTimestamp);
-
+                    
                     for (int i = 0; i < allPairs.Count; i++) {
                         if (allPairs[i].Key.BaseCurrency == "BTC") {
 
@@ -113,17 +112,23 @@ namespace PoloniexBot {
                                 Console.WriteLine(e.Message + "\n" + e.StackTrace);
                             }
 
-                            if (added >= 10) break;
+                            if (added >= 20) break;
 
                             Thread.Sleep(2000);
                         }
 
                     }
                     
-                    Data.Store.SaveTradeData();
-
                     /*
                     */
+
+                    // PullArbitragePairs(7, 7);
+
+                    Data.Store.SaveTradeData();
+
+                    // Data.PatternMatching.Manager.BuildPatternDatabase();
+
+                    // Data.PatternMatching.Manager.LoadFromFile();
 
                     Simulation.SimulateAll();
 
@@ -151,6 +156,26 @@ namespace PoloniexBot {
 
                 Trading.Manager.Start();
                 ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);
+            }
+        }
+
+        private static void PullArbitragePairs (long startDaysAgo, long dayNum) {
+
+            CurrencyPair[] downloadPairs = Data.TriArbitrage.Manager.GetTradePairs();
+
+            long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * startDaysAgo);
+            long startTimestamp = endTimestamp - (24 * 3600 * dayNum);
+
+            for (int i = 0; i < downloadPairs.Length; i++) {
+                try {
+                    Console.WriteLine("Pulling " + downloadPairs[i]);
+                    Data.Store.PullTickerHistory(downloadPairs[i], startTimestamp, endTimestamp);
+                }
+                catch (Exception e) {
+                    Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                }
+
+                Thread.Sleep(2000);
             }
         }
 

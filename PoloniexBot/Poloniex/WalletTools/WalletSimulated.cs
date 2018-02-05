@@ -50,7 +50,12 @@ namespace PoloniexAPI.WalletTools {
                 if (balances.TryGetValue(currencyPair.QuoteCurrency, out quoteCurrBalance)) {
                     balances.Remove(currencyPair.QuoteCurrency);
                     double newAvailable = quoteCurrBalance.QuoteAvailable - amountQuote;
-                    Balance b = new Balance(newAvailable, 0, newAvailable * pricePerCoin);
+
+                    double newAvailableBtcValue = 0;
+                    if (currencyPair.BaseCurrency == "BTC") newAvailableBtcValue = newAvailable * pricePerCoin;
+                    else if (currencyPair.QuoteCurrency == "BTC") newAvailableBtcValue = newAvailable;
+
+                    Balance b = new Balance(newAvailable, 0, newAvailableBtcValue);
                     balances.Add(currencyPair.QuoteCurrency, b);
                 }
                 else Console.WriteLine("Cannot do order because I'm missing sell currency");
@@ -61,11 +66,21 @@ namespace PoloniexAPI.WalletTools {
                 if (balances.TryGetValue(currencyPair.BaseCurrency, out baseCurrBalance)) {
                     balances.Remove(currencyPair.BaseCurrency);
                     double available = baseCurrBalance.QuoteAvailable + amountBase;
-                    Balance b = new Balance(available, 0, available);
+
+                    double newAvailableBtcValue = 0;
+                    if (currencyPair.BaseCurrency == "BTC") newAvailableBtcValue = available;
+                    else if (currencyPair.QuoteCurrency == "BTC") newAvailableBtcValue = available / pricePerCoin;
+
+                    Balance b = new Balance(available, 0, newAvailableBtcValue);
                     balances.Add(currencyPair.BaseCurrency, b);
                 }
                 else {
-                    Balance b = new Balance(amountBase, 0, amountBase);
+
+                    double newAvailableBtcValue = 0;
+                    if (currencyPair.BaseCurrency == "BTC") newAvailableBtcValue = amountBase;
+                    else if (currencyPair.QuoteCurrency == "BTC") newAvailableBtcValue = amountBase / pricePerCoin;
+
+                    Balance b = new Balance(amountBase, 0, newAvailableBtcValue);
                     balances.Add(currencyPair.BaseCurrency, b);
                 }
             }

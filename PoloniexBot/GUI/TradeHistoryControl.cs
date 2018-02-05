@@ -29,7 +29,7 @@ namespace PoloniexBot.GUI {
         int centerDivider = 0;
         int rightDivider = 0;
 
-        long chartTimespan = 45600; // 12 hours + 40 minutes
+        long chartTimespan = 182400; // 48 hours + 2 hours + 40 minutes
 
         protected override void OnPaint (PaintEventArgs e) {
 
@@ -91,25 +91,41 @@ namespace PoloniexBot.GUI {
                         topDivider + (centerDivider - topDivider) * 1.69f - (Style.Fonts.Small.Height / 2)));
                 }
 
+                // Draw dump line and label
+
+                float dumpLinePosX = rightDivider - (gridSizeX * 4.5f) + 1;
+                using (Pen pen = new Pen(Style.Colors.Primary.Dark2, 2)) {
+                    pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    pen.DashPattern = new float[] { 1, 2 };
+
+                    g.DrawLine(pen, dumpLinePosX, topDivider, dumpLinePosX, bottomDivider);
+                }
+                using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
+                    string text = "DMP";
+                    float width = g.MeasureString(text, Style.Fonts.Tiny).Width;
+
+                    g.DrawString(text, Style.Fonts.Tiny, brush, dumpLinePosX - (width / 2) + 1, bottomDivider - Style.Fonts.Tiny.Height - 12);
+                }
+
                 // Draw min/max lines
                 using (Pen pen = new Pen(Style.Colors.Secondary.Dark2, 3)) {
                     pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
                     pen.DashPattern = new float[] { 2, 2 };
 
-                    g.DrawLine(pen, 5, topDivider + 8, rightDivider - 5, topDivider + 8);
-                    g.DrawLine(pen, 5, bottomDivider - 9, rightDivider - 5, bottomDivider - 9);
+                    g.DrawLine(pen, 7, topDivider + 8, rightDivider - 5, topDivider + 8);
+                    g.DrawLine(pen, 7, bottomDivider - 9, rightDivider - 5, bottomDivider - 9);
                 }
 
                 // Draw timeframe legend
                 using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
-                    g.DrawString("(-t)", Style.Fonts.Tiny, brush, new PointF(rightDivider + 5, bottomDivider + 5));
+                    g.DrawString("-t(h)", Style.Fonts.Tiny, brush, new PointF(rightDivider + 5, bottomDivider + 5));
                 }
 
                 // Draw timeframe labels
                 using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
                     int number = 0;
                     for (float y = rightDivider - gridSizeX * 3; y > 0; y -= gridSizeX * 3) {
-                        number += 60;
+                        number += 240;
                         int hours = number / 60;
                         int mins = number % 60;
 
@@ -117,7 +133,7 @@ namespace PoloniexBot.GUI {
                         tText = tText.Trim();
                         float width = g.MeasureString(tText, Style.Fonts.Tiny).Width;
 
-                        g.DrawString(tText, Style.Fonts.Tiny, brush, new PointF(y - (width / 2), bottomDivider + 5));
+                        g.DrawString(tText, Style.Fonts.Tiny, brush, new PointF(y - (width / 2) + 1, bottomDivider + 5));
                     }
                 }
 
@@ -138,7 +154,7 @@ namespace PoloniexBot.GUI {
                     if (maxClosed < 0) maxClosed = 0;
 
                     // Draw closed
-                    float PosX = positionBoxMargin;
+                    float PosX = positionBoxMargin + 2;
                     int posWidth = (int)(Width - (2 * positionBoxMargin) - ((positionShowCount - 1) * positionBoxMargin)) / positionShowCount;
 
                     for (int i = maxClosed; i < closedCount; i++) {
@@ -165,12 +181,23 @@ namespace PoloniexBot.GUI {
                     }
                 }
 
+                // Draw title
+                using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
+
+                    string text = "Trade History";
+
+                    float width = g.MeasureString(text, Style.Fonts.Title).Width;
+
+                    Helper.DrawTextShadow(g, text, new PointF(7, topDivider + 18), Style.Fonts.Title, Color.Black);
+                    g.DrawString(text, Style.Fonts.Title, brush, new PointF(7, topDivider + 18));
+                }
+
                 // Draw the legend
                 using (Brush brush = new SolidBrush(Color.Black)) {
                     g.FillEllipse(brush, 43, bottomDivider - 52, 18, 18);
                     g.FillEllipse(brush, 50, bottomDivider - 34, 18, 18);
                 }
-                using (Brush brush = new SolidBrush(Style.Colors.Terciary.Dark1)) {
+                using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
                     Helper.DrawTextShadow(g, "Open:", new PointF(7, bottomDivider - 50), Style.Fonts.Small, Color.Black);
                     Helper.DrawTextShadow(g, "Close:", new PointF(7, bottomDivider - 32), Style.Fonts.Small, Color.Black);
 
@@ -198,8 +225,8 @@ namespace PoloniexBot.GUI {
             string text = "";
             float width = 0;
             float textPos = 0;
-            string[] partsOpen = Helper.SplitLeadingZeros(cp.buyPrice.ToString("F8"));
-            string[] partsClose = Helper.SplitLeadingZeros(cp.sellPrice.ToString("F8"));
+            string[] partsOpen = Helper.SplitLeadingZeros(cp.buyPrice.ToString("F" + cp.displayDigits));
+            string[] partsClose = Helper.SplitLeadingZeros(cp.sellPrice.ToString("F" + cp.displayDigits));
 
             float posXOpen = 0;
             float posXClose = 0;
@@ -207,7 +234,7 @@ namespace PoloniexBot.GUI {
             using (Brush brush = new SolidBrush(Style.Colors.Primary.Dark2)) {
 
                 // Draw open price (leading zeros)
-                text = cp.buyPrice.ToString("F8");
+                text = cp.buyPrice.ToString("F" + cp.displayDigits);
                 width = g.MeasureString(text, Style.Fonts.Tiny).Width;
                 textPos = (posWidth / 2) - (width / 2) + posX - 3;
                 posXOpen = textPos;
@@ -217,7 +244,7 @@ namespace PoloniexBot.GUI {
 
 
                 // Draw close price (leading zeros)
-                text = cp.sellPrice.ToString("F8");
+                text = cp.sellPrice.ToString("F" + cp.displayDigits);
                 width = g.MeasureString(text, Style.Fonts.Tiny).Width;
                 textPos = (posWidth / 2) - (width / 2) + posX - 3;
                 posXClose = textPos;
@@ -235,7 +262,7 @@ namespace PoloniexBot.GUI {
                 g.DrawString(partsClose[1], Style.Fonts.Tiny, brush, new PointF(posXOpen - 2, 25));
 
                 // Draw currency name
-                text = cp.pair.QuoteCurrency;
+                text = cp.pair.QuoteCurrency == "BTC" ? cp.pair.BaseCurrency : cp.pair.QuoteCurrency;
                 width = g.MeasureString(text, Style.Fonts.Tiny).Width;
                 textPos = (posWidth / 4) - (width / 2) - 4;
                 g.DrawString(text, Style.Fonts.Tiny, brush, new PointF(posX + textPos, 40));
@@ -263,8 +290,8 @@ namespace PoloniexBot.GUI {
             string text = "";
             float width = 0;
             float textPos = 0;
-            string[] partsOpen = Helper.SplitLeadingZeros(op.buyPrice.ToString("F8"));
-            string[] partsCurr = Helper.SplitLeadingZeros(op.openPrice.ToString("F8"));
+            string[] partsOpen = Helper.SplitLeadingZeros(op.buyPrice.ToString("F" + op.displayDigits));
+            string[] partsCurr = Helper.SplitLeadingZeros(op.openPrice.ToString("F" + op.displayDigits));
 
             float posXOpen = 0;
             float posXClose = 0;
@@ -272,7 +299,7 @@ namespace PoloniexBot.GUI {
             using (Brush brush = new SolidBrush(Style.Colors.Primary.Dark2)) {
 
                 // Draw open price (leading zeros)
-                text = op.buyPrice.ToString("F8");
+                text = op.buyPrice.ToString("F" + op.displayDigits);
                 width = g.MeasureString(text, Style.Fonts.Tiny).Width;
                 textPos = (posWidth / 2) - (width / 2) + posX - 3;
                 posXOpen = textPos;
@@ -285,7 +312,7 @@ namespace PoloniexBot.GUI {
             using (Brush brush = new SolidBrush(Style.Colors.Terciary.Dark2)) {
 
                 // Draw current price (leading zeros)
-                text = op.openPrice.ToString("F8");
+                text = op.openPrice.ToString("F" + op.displayDigits);
                 width = g.MeasureString(text, Style.Fonts.Tiny).Width;
                 textPos = (posWidth / 2) - (width / 2) + posX - 3;
                 posXClose = textPos;
@@ -300,7 +327,7 @@ namespace PoloniexBot.GUI {
                 g.DrawString(partsOpen[1], Style.Fonts.Tiny, brush, new PointF(posXOpen - 2, 10));
 
                 // Draw currency name
-                text = op.pair.QuoteCurrency;
+                text = op.pair.QuoteCurrency == "BTC" ? op.pair.BaseCurrency : op.pair.QuoteCurrency;
                 width = g.MeasureString(text, Style.Fonts.Tiny).Width;
                 textPos = (posWidth / 4) - (width / 2) - 4;
                 g.DrawString(text, Style.Fonts.Tiny, brush, new PointF(posX + textPos, 40));
@@ -394,8 +421,10 @@ namespace PoloniexBot.GUI {
                 g.FillEllipse(brush, posXChart - 7, centerDivider - 7, 14, 14);
                 g.FillEllipse(brush, rightDivider - 4, yPosCurr - 4, 8, 8);
 
-                float width = g.MeasureString(op.pair.QuoteCurrency, Style.Fonts.Tiny).Width;
-                g.DrawString(op.pair.QuoteCurrency, Style.Fonts.Tiny, brush, new PointF(posXChart - (width / 2) + 2, centerDivider + 10));
+                string text = op.pair.QuoteCurrency == "BTC" ? op.pair.BaseCurrency : op.pair.QuoteCurrency;
+
+                float width = g.MeasureString(text, Style.Fonts.Tiny).Width;
+                g.DrawString(text, Style.Fonts.Tiny, brush, new PointF(posXChart - (width / 2) + 2, centerDivider + 10));
             }
             using (Brush brush = new SolidBrush(Style.Colors.Background)) {
                 g.FillEllipse(brush, posXChart - 5, centerDivider - 5, 10, 10);
@@ -430,14 +459,15 @@ namespace PoloniexBot.GUI {
                 g.FillEllipse(brush, posXChartOpen - 7, centerDivider - 7, 14, 14);
                 g.FillEllipse(brush, posXChartClose - 5, yPosCurr - 5, 10, 10);
 
-                float width = g.MeasureString(cp.pair.QuoteCurrency, Style.Fonts.Tiny).Width;
-                g.DrawString(cp.pair.QuoteCurrency, Style.Fonts.Tiny, brush, new PointF(posXChartOpen - (width / 2) + 2, centerDivider + 10));
+                string text = cp.pair.QuoteCurrency == "BTC" ? cp.pair.BaseCurrency : cp.pair.QuoteCurrency;
+
+                float width = g.MeasureString(text, Style.Fonts.Tiny).Width;
+                g.DrawString(text, Style.Fonts.Tiny, brush, new PointF(posXChartOpen - (width / 2) + 2, centerDivider + 10));
             }
 
             using (Brush brush = new SolidBrush(Style.Colors.Background)) {
                 g.FillEllipse(brush, posXChartOpen - 5, centerDivider - 5, 10, 10);
             }
         }
-
     }
 }

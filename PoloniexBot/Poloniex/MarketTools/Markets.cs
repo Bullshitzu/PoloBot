@@ -26,6 +26,24 @@ namespace PoloniexAPI.MarketTools {
             }
         }
 
+        private IDictionary<CurrencyPair, IOrderBook> GetOpenOrders (uint depth) {
+            try {
+                var data = GetData<IDictionary<string, OrderBook>>(
+                    "returnOrderBook",
+                    "currencyPair=all",
+                    "depth=" + depth
+                );
+                return data.ToDictionary(
+                    x => CurrencyPair.Parse(x.Key),
+                    x => (IOrderBook)x.Value
+                );
+            }
+            catch (Exception e) {
+                PoloniexBot.CLI.Manager.PrintError(e.Message);
+                return null;
+            }
+        }
+
         private IOrderBook GetOpenOrders (CurrencyPair currencyPair, uint depth) {
             try {
                 var data = GetData<OrderBook>(
@@ -94,6 +112,10 @@ namespace PoloniexAPI.MarketTools {
 
         public Task<IOrderBook> GetOpenOrdersAsync (CurrencyPair currencyPair, uint depth) {
             return Task.Factory.StartNew(() => GetOpenOrders(currencyPair, depth));
+        }
+
+        public Task<IDictionary<CurrencyPair, IOrderBook>> GetOpenOrdersAsync (uint depth) {
+            return Task.Factory.StartNew(() => GetOpenOrders(depth));
         }
 
         public Task<IList<ITrade>> GetTradesAsync (CurrencyPair currencyPair) {

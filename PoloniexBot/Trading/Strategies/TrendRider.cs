@@ -7,9 +7,9 @@ using PoloniexAPI;
 using PoloniexBot.Trading.Rules;
 
 namespace PoloniexBot.Trading.Strategies {
-    class MeanRevADX : Strategy {
+    class TrendRider : Strategy {
 
-        public MeanRevADX (CurrencyPair pair) : base(pair) { }
+        public TrendRider (CurrencyPair pair) : base(pair) { }
 
         // ------------------------------
 
@@ -34,6 +34,37 @@ namespace PoloniexBot.Trading.Strategies {
         TradeRule ruleADX;
 
         TradeRule[] allRules = { };
+
+        // ------------------------------
+
+        static Dictionary<CurrencyPair, double> TrendScores;
+
+        private void UpdateTrendScore (double score) {
+            if (TrendScores == null) TrendScores = new Dictionary<CurrencyPair, double>();
+            lock (TrendScores) {
+                if (!double.IsNaN(score) && !double.IsInfinity(score)) {
+                    TrendScores.Remove(this.pair);
+                    TrendScores.Add(this.pair, score);
+                }
+            }
+        }
+        private int GetTrendScorePosition () {
+            if (TrendScores == null) return int.MaxValue;
+
+            List<KeyValuePair<CurrencyPair, double>> trendScoresList;
+            lock (TrendScores) {
+                trendScoresList = new List<KeyValuePair<CurrencyPair, double>>(TrendScores.ToArray());
+            }
+
+            trendScoresList.Sort(new Utility.MarketDataComparerTrend());
+            trendScoresList.Reverse();
+
+            for (int i = 0; i < trendScoresList.Count; i++) {
+                if (trendScoresList[i].Key == this.pair) return i;
+            }
+
+            return int.MaxValue;
+        }
 
         // ------------------------------
 
@@ -119,7 +150,7 @@ namespace PoloniexBot.Trading.Strategies {
             ruleMinSellPriceDump = new RuleMinimumSellPriceDump();
             ruleDump = new RuleDump();
 
-            ruleMeanRev = new RuleMeanRev(3.75);
+            ruleMeanRev = new RuleMeanRev(4.25);
             ruleADX = new RuleADX(75);
 
             // order doesn't matter
@@ -135,7 +166,7 @@ namespace PoloniexBot.Trading.Strategies {
         }
 
         public override void UpdatePredictors () {
-            
+
             TickerChangedEventArgs lastTicker = Data.Store.GetLastTicker(pair);
             double lastPrice = lastTicker.MarketData.PriceLast;
             double buyPrice = lastTicker.MarketData.OrderTopBuy;
@@ -187,6 +218,13 @@ namespace PoloniexBot.Trading.Strategies {
             if (predictorExtremes.GetLastResult().variables.TryGetValue("max", out tempVar)) maxPrice = tempVar.value;
             if (predictorADX.GetLastResult().variables.TryGetValue("adx", out tempVar)) adx = tempVar.value;
 
+            // ----------------------------------
+            // Update trend score and get position
+            // ----------------------------------
+
+            UpdateTrendScore(meanRev * adx);
+            int trendScorePosition = GetTrendScorePosition();
+
             // ------------------------------------
             // Modify MeanRev with USDT/BTC trend
             // ------------------------------------
@@ -230,7 +268,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             ruleVariables.Add("meanRevGUI", meanRev);
             ruleVariables.Add("adxGUI", RuleADX.Trigger - adx);
-
 
             // -----------------------
             // Update the sell band price rise offset
@@ -282,10 +319,12 @@ namespace PoloniexBot.Trading.Strategies {
 
                         if (ruleADX.Result == RuleResult.Buy && ruleMeanRev.Result == RuleResult.Buy) {
 
-                            Buy(sellPrice, postQuoteAmount, true);
-                            return;
-                        }
+                            if (trendScorePosition == 0 && TrendScores.Count >= 10) {
 
+                                Buy(sellPrice, postQuoteAmount, true);
+                                return;
+                            }
+                        }
                     }
                 }
             }
@@ -330,13 +369,6 @@ namespace PoloniexBot.Trading.Strategies {
                             Sell(buyPrice, currQuoteAmount, false);
                             return;
                         }
-                    }
-
-                    if (ruleMeanRev.Result == RuleResult.Sell) {
-                        // price is on a downtrend
-
-                        Sell(buyPrice, currQuoteAmount, false);
-                        return;
                     }
                 }
             }

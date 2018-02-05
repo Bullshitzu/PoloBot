@@ -8,11 +8,7 @@ using PoloniexAPI;
 namespace PoloniexBot.Data.Predictors {
     class PatternMatch : Predictor {
 
-        public PatternMatch (CurrencyPair pair, Data.ANN.Network ann) : base(pair) {
-            this.ANN = ann;
-        }
-
-        private Data.ANN.Network ANN;
+        public PatternMatch (CurrencyPair pair) : base(pair) { }
 
         public override void SignResult (ResultSet rs) {
             rs.signature = "Pattern Match";
@@ -21,20 +17,29 @@ namespace PoloniexBot.Data.Predictors {
         public void Recalculate (object dataSet) {
             TickerChangedEventArgs[] tickers = (TickerChangedEventArgs[])dataSet;
             if (tickers == null || tickers.Length == 0) return;
-            if (ANN == null) return;
 
             Data.PatternMatching.Pattern p = Data.PatternMatching.Manager.BuildPattern(tickers, tickers.Length - 1, false);
-            Data.PatternMatching.Pattern closestMatch = Data.PatternMatching.Manager.AnalyzePattern(p, pair);
+            Data.PatternMatching.Pattern[] matches = Data.PatternMatching.Manager.AnalyzePattern(p, pair);
 
-            ANN.SetInputs(closestMatch.movement, true);
-            ANN.Recalculate();
-            double prediction = ANN.GetOutputs().First();
+            double prediction = GetAveragePrediction(matches, 5);
 
             ResultSet rs = new ResultSet(tickers.Last().Timestamp);
             rs.variables.Add("result", new ResultSet.Variable("Prediction", prediction, 8));
 
             SaveResult(rs);
 
+        }
+
+        private double GetAveragePrediction (PatternMatching.Pattern[] patterns, int count) {
+            if (patterns == null) return 0;
+
+            double sum = 0;
+            int cnt = 0;
+            for (int i = 0; i < patterns.Length && i < count; i++) {
+                sum += patterns[i].movement.Last();
+                cnt++;
+            }
+            return sum / cnt;
         }
 
     }

@@ -27,6 +27,24 @@ namespace PoloniexAPI.MarketTools {
             }
         }
 
+        private IDictionary<CurrencyPair, IOrderBook> GetOpenOrders (uint depth) {
+            try {
+                var data = GetData<IDictionary<string, OrderBook>>(
+                    "returnOrderBook",
+                    "currencyPair=all",
+                    "depth=" + depth
+                );
+                return data.ToDictionary(
+                    x => CurrencyPair.Parse(x.Key),
+                    x => (IOrderBook)x.Value
+                );
+            }
+            catch (Exception e) {
+                ErrorLog.ReportErrorSilent(e);
+                return null;
+            }
+        }
+
         private IOrderBook GetOpenOrders (CurrencyPair currencyPair, uint depth) {
             try {
                 var data = GetData<OrderBook>(
@@ -68,6 +86,10 @@ namespace PoloniexAPI.MarketTools {
             return Task.Factory.StartNew(() => GetSummary());
         }
 
+        public Task<IDictionary<CurrencyPair, IOrderBook>> GetOpenOrdersAsync (uint depth) {
+            return Task.Factory.StartNew(() => GetOpenOrders(depth));
+        }
+
         public Task<IOrderBook> GetOpenOrdersAsync (CurrencyPair currencyPair, uint depth) {
             return Task.Factory.StartNew(() => GetOpenOrders(currencyPair, depth));
         }
@@ -96,5 +118,6 @@ namespace PoloniexAPI.MarketTools {
         private T GetData<T> (string command, params object[] parameters) {
             return ApiWebClient.GetData<T>(Helper.ApiUrlHttpsRelativePublic + command, parameters);
         }
+
     }
 }

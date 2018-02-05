@@ -16,9 +16,6 @@ namespace PoloniexBot.Trading.Rules {
 
             if (!values.TryGetValue("macdTrend", out macdTrend)) throw new VariableNotIncludedException();
 
-            // Console.WriteLine("MACD Trend: "+macdTrend.ToString());
-
-
             if (macdTrend > BuyTrigger) {
                 currentResult = RuleResult.Buy;
                 return;

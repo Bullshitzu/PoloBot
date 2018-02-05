@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleMACD : TradeRule {
 
-        public static double MacdTrigger = 0.1;
-        private double localTrigger = 0.1;
+        public static double MacdTrigger = 0.015;
+        private double localTrigger = 0.015;
 
         public RuleMACD () {
             localTrigger = MacdTrigger;

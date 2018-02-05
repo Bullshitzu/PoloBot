@@ -37,7 +37,7 @@ namespace PoloniexBot.Trading {
             this.pair = pair;
             invokeQueue = new TSList<InvokePair>();
 
-            if (pair.BaseCurrency == "USDT" && pair.QuoteCurrency == "BTC") strategy = new Strategies.BaseCurrTrendUpdater(pair);
+            if (pair.BaseCurrency == "USDT" && pair.QuoteCurrency == "BTC") strategy = new Strategies.BaseTrendMonitor(pair);
             else this.strategy = strategy;
         }
         public TPManager (CurrencyPair pair) {
@@ -46,13 +46,10 @@ namespace PoloniexBot.Trading {
 
             switch (pair.BaseCurrency) {
                 case "USDT":
-                    strategy = new Strategies.BaseCurrTrendUpdater(pair);
-                    break;
-                case "ETH":
-                    strategy = new Strategies.BubbleSave(pair);
+                    strategy = new Strategies.BaseTrendMonitor(pair);
                     break;
                 default:
-                    strategy = new Strategies.MeanRevADX(pair);
+                    strategy = new Strategies.LongTermTrendRider(pair);
                     break;
             }
         }

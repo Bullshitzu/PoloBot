@@ -42,8 +42,6 @@ namespace PoloniexBot.Trading.Strategies {
         private Data.Predictors.PriceExtremes predictorExtremes;
         private Data.Predictors.PatternMatch predictorPatternMatch;
 
-        private Data.ANN.Network ANN;
-
         // ------------------------------
 
         public override void Reset () {
@@ -63,8 +61,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             // ----------------------------------
 
-            LoadANN();
-
             SetupRules();
 
             // ----------------------------------
@@ -75,7 +71,7 @@ namespace PoloniexBot.Trading.Strategies {
             openPosition = openPos;
 
             predictorExtremes = new Data.Predictors.PriceExtremes(pair);
-            predictorPatternMatch = new Data.Predictors.PatternMatch(pair, ANN);
+            predictorPatternMatch = new Data.Predictors.PatternMatch(pair);
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
@@ -119,15 +115,6 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
                 rulePatternMatch }; // buy rules
         }
-        private void LoadANN () {
-            try {
-                string[] lines = Utility.FileManager.ReadFile("data/" + pair + ".ann");
-                ANN = Data.ANN.Network.Parse(lines);
-            }
-            catch (Exception e) {
-                Console.WriteLine("Couldn't load ANN for " + pair + " - " + e.Message + " - " + e.StackTrace);
-            }
-        }
 
         public override void UpdatePredictors () {
 
@@ -141,6 +128,8 @@ namespace PoloniexBot.Trading.Strategies {
 
             predictorExtremes.Update(tickers);
             predictorPatternMatch.Recalculate(tickers);
+
+            if(pair.BaseCurrency == "USDT") Manager.UpdateWalletValue("USDT", tickers.Last().MarketData.PriceLast);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
 
@@ -159,13 +148,13 @@ namespace PoloniexBot.Trading.Strategies {
 
             double currQuoteOrdersAmount = Manager.GetWalletStateOrders(pair.QuoteCurrency);
 
-            double currTradableBaseAmount = currBaseAmount * 0.5;
+            double currTradableBaseAmount = currBaseAmount;
             if (currTradableBaseAmount < RuleMinimumBaseAmount.MinimumTradeAmount) currTradableBaseAmount = currBaseAmount;
 
             double postBaseAmount = currQuoteAmount * buyPrice;
             double postQuoteAmount = currTradableBaseAmount / sellPrice;
 
-            double buySignal = 0;
+            double patternMatchResult = 0;
             double minPrice = 0;
             double maxPrice = 0;
 
@@ -173,7 +162,7 @@ namespace PoloniexBot.Trading.Strategies {
 
             Data.ResultSet.Variable tempVar;
 
-            if (predictorPatternMatch.GetLastResult().variables.TryGetValue("result", out tempVar)) buySignal = tempVar.value;
+            if (predictorPatternMatch.GetLastResult().variables.TryGetValue("result", out tempVar)) patternMatchResult = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("min", out tempVar)) minPrice = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("max", out tempVar)) maxPrice = tempVar.value;
 
@@ -203,7 +192,7 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("postQuoteAmount", postQuoteAmount);
             ruleVariables.Add("postBaseAmount", postBaseAmount);
 
-            ruleVariables.Add("buySignal", buySignal);
+            ruleVariables.Add("patternMatchResult", patternMatchResult);
 
             ruleVariables.Add("minPrice", minPrice);
             ruleVariables.Add("maxPrice", maxPrice);
@@ -251,7 +240,7 @@ namespace PoloniexBot.Trading.Strategies {
                     if (ruleMinQuote.Result == RuleResult.BlockSell) {
                         // if it's blocking sell that means we don't own quote, so go ahead with buying
 
-                        if (rulePatternMatch.currentResult == RuleResult.Buy) {
+                        if (rulePatternMatch.Result == RuleResult.Buy) {
                             // current pattern indicates the price will rise
 
                             Buy(sellPrice, postQuoteAmount);
@@ -290,6 +279,13 @@ namespace PoloniexBot.Trading.Strategies {
                             Sell(buyPrice, currQuoteAmount);
                             return;
                         }
+                    }
+
+                    if (rulePatternMatch.Result == RuleResult.Sell) {
+                        // current pattern indicates the price will fall
+
+                        Sell(buyPrice, currQuoteAmount);
+                        return;
                     }
                 }
             }

@@ -7,9 +7,9 @@ using PoloniexAPI;
 using PoloniexBot.Trading.Rules;
 
 namespace PoloniexBot.Trading.Strategies {
-    class MeanRevADX : Strategy {
+    class Ch24 : Strategy {
 
-        public MeanRevADX (CurrencyPair pair) : base(pair) { }
+        public Ch24 (CurrencyPair pair) : base(pair) { }
 
         // ------------------------------
 
@@ -30,10 +30,38 @@ namespace PoloniexBot.Trading.Strategies {
         TradeRule ruleMinSellPriceDump;
         TradeRule ruleDump;
 
-        TradeRule ruleMeanRev;
-        TradeRule ruleADX;
-
         TradeRule[] allRules = { };
+
+        // ------------------------------
+
+        static Dictionary<CurrencyPair, double> TrendScores;
+
+        private void UpdateTrendScore (double score) {
+            if (TrendScores == null) TrendScores = new Dictionary<CurrencyPair, double>();
+            lock (TrendScores) {
+                if (!double.IsNaN(score) && !double.IsInfinity(score)) {
+                    TrendScores.Remove(this.pair);
+                    TrendScores.Add(this.pair, score);
+                }
+            }
+        }
+        private int GetTrendScorePosition () {
+            if (TrendScores == null) return int.MaxValue;
+
+            List<KeyValuePair<CurrencyPair, double>> trendScoresList;
+            lock (TrendScores) {
+                trendScoresList = new List<KeyValuePair<CurrencyPair, double>>(TrendScores.ToArray());
+            }
+
+            trendScoresList.Sort(new Utility.MarketDataComparerTrend());
+            trendScoresList.Reverse();
+
+            for (int i = 0; i < trendScoresList.Count; i++) {
+                if (trendScoresList[i].Key == this.pair) return i;
+            }
+
+            return int.MaxValue;
+        }
 
         // ------------------------------
 
@@ -43,9 +71,6 @@ namespace PoloniexBot.Trading.Strategies {
 
         private Data.Predictors.PriceExtremes predictorExtremes;
 
-        private Data.Predictors.MeanReversion predictorMeanRev;
-        private Data.Predictors.ADX predictorADX;
-
         // ------------------------------
 
         public override void Reset () {
@@ -54,8 +79,6 @@ namespace PoloniexBot.Trading.Strategies {
             openPosition = 0;
 
             predictorExtremes = null;
-            predictorMeanRev = null;
-            predictorADX = null;
 
             Setup(true);
         }
@@ -79,24 +102,11 @@ namespace PoloniexBot.Trading.Strategies {
             if (lastTicker == null) throw new Exception("Couldn't build timeframe model for " + pair + " - no tickers available");
 
             predictorExtremes = new Data.Predictors.PriceExtremes(pair);
-            predictorMeanRev = new Data.Predictors.MeanReversion(pair, 3600);
-            predictorADX = new Data.Predictors.ADX(pair);
-
+            
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
 
             predictorExtremes.Update(tickers);
-
-            List<TickerChangedEventArgs> tickerList = new List<TickerChangedEventArgs>();
-
-            for (int i = 0; i < tickers.Length; i++) {
-                tickerList.Add(tickers[i]);
-
-                predictorMeanRev.Recalculate(tickerList.ToArray());
-                predictorADX.Recalculate(tickerList.ToArray());
-
-                if (i % 100 == 0) Utility.ThreadManager.ReportAlive("MeanRevADX");
-            }
 
         }
         private void SetupRules () {
@@ -119,9 +129,6 @@ namespace PoloniexBot.Trading.Strategies {
             ruleMinSellPriceDump = new RuleMinimumSellPriceDump();
             ruleDump = new RuleDump();
 
-            ruleMeanRev = new RuleMeanRev(3.75);
-            ruleADX = new RuleADX(75);
-
             // order doesn't matter
             allRules = new TradeRule[] { 
                 ruleDelayAllTrades, ruleDelayBuy, // time delay
@@ -131,11 +138,11 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinQuoteOrders, // minimum orders amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss, // sell rules
                 ruleMinSellPriceDump, ruleDump, // dump rules
-                ruleMeanRev, ruleADX }; // buy rules
+                }; // buy rules
         }
 
         public override void UpdatePredictors () {
-            
+
             TickerChangedEventArgs lastTicker = Data.Store.GetLastTicker(pair);
             double lastPrice = lastTicker.MarketData.PriceLast;
             double buyPrice = lastTicker.MarketData.OrderTopBuy;
@@ -145,8 +152,6 @@ namespace PoloniexBot.Trading.Strategies {
             if (tickers == null) throw new Exception("Data store returned NULL tickers for pair " + pair);
 
             predictorExtremes.Update(tickers);
-            predictorMeanRev.Recalculate(tickers);
-            predictorADX.Recalculate(tickers);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
 
@@ -174,18 +179,21 @@ namespace PoloniexBot.Trading.Strategies {
             double postBaseAmount = currQuoteAmount * buyPrice;
             double postQuoteAmount = currTradableBaseAmount / sellPrice;
 
-            double meanRev = 0;
             double minPrice = 0;
             double maxPrice = 0;
-            double adx = 0;
 
             // --------------------------
 
             Data.ResultSet.Variable tempVar;
-            if (predictorMeanRev.GetLastResult().variables.TryGetValue("score", out tempVar)) meanRev = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("min", out tempVar)) minPrice = tempVar.value;
             if (predictorExtremes.GetLastResult().variables.TryGetValue("max", out tempVar)) maxPrice = tempVar.value;
-            if (predictorADX.GetLastResult().variables.TryGetValue("adx", out tempVar)) adx = tempVar.value;
+
+            // ----------------------------------
+            // Update trend score and get position
+            // ----------------------------------
+
+            UpdateTrendScore(lastTicker.MarketData.PriceChangePercentage);
+            int trendScorePosition = GetTrendScorePosition();
 
             // ------------------------------------
             // Modify MeanRev with USDT/BTC trend
@@ -219,18 +227,11 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("postQuoteAmount", postQuoteAmount);
             ruleVariables.Add("postBaseAmount", postBaseAmount);
 
-            ruleVariables.Add("meanRev", meanRev);
-            ruleVariables.Add("adx", adx);
-
             ruleVariables.Add("minPrice", minPrice);
             ruleVariables.Add("maxPrice", maxPrice);
 
             ruleVariables.Add("minGUI", lastPrice / minPrice);
             ruleVariables.Add("maxGUI", maxPrice / lastPrice);
-
-            ruleVariables.Add("meanRevGUI", meanRev);
-            ruleVariables.Add("adxGUI", RuleADX.Trigger - adx);
-
 
             // -----------------------
             // Update the sell band price rise offset
@@ -280,12 +281,11 @@ namespace PoloniexBot.Trading.Strategies {
                     if (ruleMinQuote.Result == RuleResult.BlockSell) {
                         // if it's blocking sell that means we don't own quote, so go ahead with buying
 
-                        if (ruleADX.Result == RuleResult.Buy && ruleMeanRev.Result == RuleResult.Buy) {
+                        if (TrendScores.Count >= 10 && trendScorePosition == 0) {
 
                             Buy(sellPrice, postQuoteAmount, true);
                             return;
                         }
-
                     }
                 }
             }
@@ -330,13 +330,6 @@ namespace PoloniexBot.Trading.Strategies {
                             Sell(buyPrice, currQuoteAmount, false);
                             return;
                         }
-                    }
-
-                    if (ruleMeanRev.Result == RuleResult.Sell) {
-                        // price is on a downtrend
-
-                        Sell(buyPrice, currQuoteAmount, false);
-                        return;
                     }
                 }
             }

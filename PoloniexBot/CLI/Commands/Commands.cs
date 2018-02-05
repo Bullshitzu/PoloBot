@@ -96,7 +96,9 @@ namespace PoloniexBot.CLI {
 
             Utility.ThreadManager.Register(() => {
                 PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
-                GUI.GUIManager.MarkPairUser(pair);
+
+                if (GUI.GUIManager.MarkPairUser(pair)) CLI.Manager.PrintNote("Marking " + pair.QuoteCurrency + " for display priority.");
+                else CLI.Manager.PrintError("Specified currency not found in tracked pairs!");
             }, "Mark Pair", false);
         }
         public static void UnmarkPair (string[] parameters) {
@@ -104,7 +106,8 @@ namespace PoloniexBot.CLI {
 
             Utility.ThreadManager.Register(() => {
                 PoloniexAPI.CurrencyPair pair = new PoloniexAPI.CurrencyPair("BTC", parameters[1].ToUpper());
-                GUI.GUIManager.UnmarkPairUser(pair);
+                if (GUI.GUIManager.UnmarkPairUser(pair)) CLI.Manager.PrintNote("Removing " + pair.QuoteCurrency + " from display priority.");
+                else CLI.Manager.PrintError("Specified currency not found in tracked pairs!");
             }, "Unmark Pair", false);
         }
 

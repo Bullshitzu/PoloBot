@@ -7,16 +7,22 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RulePatternMatch : TradeRule {
 
-        public static double BuyTrigger = 0.3;
+        public static double BuyTrigger = 2;
+        public static double SellTrigger = -2;
 
         public override void Recalculate (Dictionary<string, double> values) {
 
-            double buySignal = 0;
+            double signal = 0;
 
-            if (!values.TryGetValue("buySignal", out buySignal)) throw new VariableNotIncludedException("buySignal");
+            if (!values.TryGetValue("patternMatchResult", out signal)) throw new VariableNotIncludedException("patternMatchResult");
 
-            if (buySignal > BuyTrigger) {
+            if (signal > BuyTrigger) {
                 currentResult = RuleResult.Buy;
+                return;
+            }
+
+            if (signal < SellTrigger) {
+                currentResult = RuleResult.Sell;
                 return;
             }
 

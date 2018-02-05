@@ -52,10 +52,10 @@ namespace Utility.Log {
         // ----------------------------------------
 
         public static void LogNetSent (string message) {
-            NetMessages.Add(new MessageTypes.NetMessage(true, message));
+            // NetMessages.Add(new MessageTypes.NetMessage(true, message));
         }
         public static void LogNetReceived (string message) {
-            NetMessages.Add(new MessageTypes.NetMessage(false, message));
+            // NetMessages.Add(new MessageTypes.NetMessage(false, message));
         }
         static void ResolveNetLogs () {
             if (NetMessages.Count == 0) return;
@@ -76,10 +76,10 @@ namespace Utility.Log {
         // ----------------------------------------
 
         public static void LogError (string message) {
-            ErrorMessages.Add(new MessageTypes.ErrorMessage(message));
+            // ErrorMessages.Add(new MessageTypes.ErrorMessage(message));
         }
         public static void LogError (string message, string stackTrace) {
-            ErrorMessages.Add(new MessageTypes.ErrorMessage(message, stackTrace));
+            // ErrorMessages.Add(new MessageTypes.ErrorMessage(message, stackTrace));
         }
         static void ResolveErrorLogs () {
             if (ErrorMessages.Count == 0) return;

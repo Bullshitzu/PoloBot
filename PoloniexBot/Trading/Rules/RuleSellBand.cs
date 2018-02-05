@@ -40,7 +40,7 @@ namespace PoloniexBot.Trading.Rules {
                 return;
             }
 
-            double sellPriceTrigger = 0.003339 * (Math.Pow(maximumPriceDeltaPercent, 2)) + 0.04984 * maximumPriceDeltaPercent + 0.8677 + PriceRiseOffset;
+            double sellPriceTrigger = 0.1 * maximumPriceDeltaPercent + 3 + PriceRiseOffset;
             
             if (sellPriceTrigger > MaxBandSize) sellPriceTrigger = MaxBandSize;
             if (sellPriceTrigger < 0) sellPriceTrigger = 0;
@@ -48,10 +48,7 @@ namespace PoloniexBot.Trading.Rules {
             sellPriceTrigger *= PriceTriggerMult;
             sellPriceTrigger = maximumPriceDeltaPercent - sellPriceTrigger;
 
-            // 1.5 = 0.25
-            // 5 = 0.5
-            // 10 = 1
-            // 20 = 2.5
+            // f(x) = 0.1333x + 0.35
 
             if (currPriceDeltaPercent < sellPriceTrigger) {
                 currentResult = RuleResult.Sell;

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PoloniexAPI;
 using PoloniexBot.Trading.Rules;
+using PoloniexAPI;
 
 namespace PoloniexBot.Trading.Strategies {
-    class MeanRevADX : Strategy {
+    class LongTermTrendRider : Strategy {
 
-        public MeanRevADX (CurrencyPair pair) : base(pair) { }
+        public LongTermTrendRider (CurrencyPair pair) : base(pair) { }
 
         // ------------------------------
 
@@ -31,9 +31,39 @@ namespace PoloniexBot.Trading.Strategies {
         TradeRule ruleDump;
 
         TradeRule ruleMeanRev;
-        TradeRule ruleADX;
 
         TradeRule[] allRules = { };
+
+        // ------------------------------
+
+        static Dictionary<CurrencyPair, double> TrendScores;
+
+        private void UpdateTrendScore (double score) {
+            if (TrendScores == null) TrendScores = new Dictionary<CurrencyPair, double>();
+            lock (TrendScores) {
+                if (!double.IsNaN(score) && !double.IsInfinity(score)) {
+                    TrendScores.Remove(this.pair);
+                    TrendScores.Add(this.pair, score);
+                }
+            }
+        }
+        private int GetTrendScorePosition () {
+            if (TrendScores == null) return int.MaxValue;
+
+            List<KeyValuePair<CurrencyPair, double>> trendScoresList;
+            lock (TrendScores) {
+                trendScoresList = new List<KeyValuePair<CurrencyPair, double>>(TrendScores.ToArray());
+            }
+
+            trendScoresList.Sort(new Utility.MarketDataComparerTrend());
+            trendScoresList.Reverse();
+
+            for (int i = 0; i < trendScoresList.Count; i++) {
+                if (trendScoresList[i].Key == this.pair) return i;
+            }
+
+            return int.MaxValue;
+        }
 
         // ------------------------------
 
@@ -79,8 +109,8 @@ namespace PoloniexBot.Trading.Strategies {
             if (lastTicker == null) throw new Exception("Couldn't build timeframe model for " + pair + " - no tickers available");
 
             predictorExtremes = new Data.Predictors.PriceExtremes(pair);
-            predictorMeanRev = new Data.Predictors.MeanReversion(pair, 3600);
-            predictorADX = new Data.Predictors.ADX(pair);
+            predictorMeanRev = new Data.Predictors.MeanReversion(pair, 43200); // 43200 // 12 hours
+            predictorADX = new Data.Predictors.ADX(pair, 7200); // 7200 // 2 hours
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't build predictor history for " + pair + " - no tickers available");
@@ -114,13 +144,12 @@ namespace PoloniexBot.Trading.Strategies {
 
             ruleMinSellprice = new RuleMinimumSellPrice();
             ruleSellBand = new RuleSellBand();
-            ruleStopLoss = new RuleStopLoss(0.9);
+            ruleStopLoss = new RuleStopLoss(0.8);
 
             ruleMinSellPriceDump = new RuleMinimumSellPriceDump();
             ruleDump = new RuleDump();
 
-            ruleMeanRev = new RuleMeanRev(3.75);
-            ruleADX = new RuleADX(75);
+            ruleMeanRev = new RuleMeanRev(4);
 
             // order doesn't matter
             allRules = new TradeRule[] { 
@@ -131,11 +160,11 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinQuoteOrders, // minimum orders amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss, // sell rules
                 ruleMinSellPriceDump, ruleDump, // dump rules
-                ruleMeanRev, ruleADX }; // buy rules
+                ruleMeanRev }; // buy rules
         }
 
         public override void UpdatePredictors () {
-            
+
             TickerChangedEventArgs lastTicker = Data.Store.GetLastTicker(pair);
             double lastPrice = lastTicker.MarketData.PriceLast;
             double buyPrice = lastTicker.MarketData.OrderTopBuy;
@@ -187,6 +216,15 @@ namespace PoloniexBot.Trading.Strategies {
             if (predictorExtremes.GetLastResult().variables.TryGetValue("max", out tempVar)) maxPrice = tempVar.value;
             if (predictorADX.GetLastResult().variables.TryGetValue("adx", out tempVar)) adx = tempVar.value;
 
+            if (double.IsNaN(adx) || double.IsInfinity(adx)) adx = 100;
+
+            // ----------------------------------
+            // Update trend score and get position
+            // ----------------------------------
+
+            UpdateTrendScore(meanRev * adx); // meanRev * adx
+            int trendScorePosition = GetTrendScorePosition();
+
             // ------------------------------------
             // Modify MeanRev with USDT/BTC trend
             // ------------------------------------
@@ -229,8 +267,7 @@ namespace PoloniexBot.Trading.Strategies {
             ruleVariables.Add("maxGUI", maxPrice / lastPrice);
 
             ruleVariables.Add("meanRevGUI", meanRev);
-            ruleVariables.Add("adxGUI", RuleADX.Trigger - adx);
-
+            ruleVariables.Add("adxGUI", adx);
 
             // -----------------------
             // Update the sell band price rise offset
@@ -280,12 +317,14 @@ namespace PoloniexBot.Trading.Strategies {
                     if (ruleMinQuote.Result == RuleResult.BlockSell) {
                         // if it's blocking sell that means we don't own quote, so go ahead with buying
 
-                        if (ruleADX.Result == RuleResult.Buy && ruleMeanRev.Result == RuleResult.Buy) {
+                        if (ruleMeanRev.currentResult == RuleResult.Buy) {
 
-                            Buy(sellPrice, postQuoteAmount, true);
-                            return;
+                            if (trendScorePosition == 0 && TrendScores.Count >= 10) {
+
+                                Buy(sellPrice, postQuoteAmount, true);
+                                return;
+                            }
                         }
-
                     }
                 }
             }
@@ -295,6 +334,8 @@ namespace PoloniexBot.Trading.Strategies {
             if (ruleMinQuote.Result != RuleResult.BlockSell && ruleMinBasePost.Result != RuleResult.BlockSell) {
                 // we have enough of quote and will have enough of base (after trade) to satisfy minimum trade amount (0.0001)
 
+                GUI.GUIManager.MarkPairUser(this.pair);
+
                 if (ruleForce.Result == RuleResult.Sell) {
                     Sell(buyPrice, currQuoteAmount, true);
                     return;
@@ -302,6 +343,13 @@ namespace PoloniexBot.Trading.Strategies {
 
                 if (ruleDelayAllTrades.Result != RuleResult.BlockBuySell) {
                     // enough time has passed since the last trades were made
+
+                    if (RuleBubbleSave.SellAlts) {
+                        // price of USDT / BTC is crashing, sell so you can buy USDT
+                        
+                        Sell(buyPrice, currQuoteAmount, true);
+                        return;
+                    }
 
                     if (ruleStopLoss.Result == RuleResult.Sell) {
                         // price has dropped below stop-loss
@@ -330,13 +378,6 @@ namespace PoloniexBot.Trading.Strategies {
                             Sell(buyPrice, currQuoteAmount, false);
                             return;
                         }
-                    }
-
-                    if (ruleMeanRev.Result == RuleResult.Sell) {
-                        // price is on a downtrend
-
-                        Sell(buyPrice, currQuoteAmount, false);
-                        return;
                     }
                 }
             }
@@ -388,6 +429,8 @@ namespace PoloniexBot.Trading.Strategies {
                 }
                 else {
                     LastSellTime = Data.Store.GetLastTicker(pair).Timestamp;
+
+                    GUI.GUIManager.UnmarkPairUser(this.pair);
 
                     ruleForce.currentResult = RuleResult.None;
 

@@ -2,7 +2,7 @@ using PoloniexAPI.MarketTools;
 using System;
 
 namespace PoloniexAPI {
-    public class TickerChangedEventArgs : EventArgs, IComparable<TickerChangedEventArgs> {
+    public class TickerChangedEventArgs : EventArgs, IComparable<TickerChangedEventArgs>, IDisposable {
         public CurrencyPair CurrencyPair { get; private set; }
         public MarketData MarketData { get; private set; }
 
@@ -23,6 +23,11 @@ namespace PoloniexAPI {
 
         public int CompareTo (TickerChangedEventArgs other) {
             return this.Timestamp.CompareTo(other.Timestamp);
+        }
+
+        public void Dispose () {
+            this.CurrencyPair = null;
+            this.MarketData = null;
         }
     }
 }

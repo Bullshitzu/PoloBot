@@ -46,7 +46,23 @@ namespace PoloniexBot.GUI {
             this.MarkedUser = marked;
 
             lock (this) {
-                priceData = tickers;
+                List<PoloniexAPI.TickerChangedEventArgs> tempList = new List<PoloniexAPI.TickerChangedEventArgs>();
+                long startTime = tickers.Last().Timestamp - (GraphTimeframe * 3600 + 900);
+                long lastTime = 0;
+
+                bool doneSkip = false;
+
+                for (int i = 0; i < tickers.Length; i++) {
+                    if (!doneSkip && tickers[i].Timestamp < startTime) continue;
+                    doneSkip = true;
+                    
+                    if (tickers[i].Timestamp - 60 < lastTime) continue;
+
+                    tempList.Add(tickers[i]);
+                    lastTime = tickers[i].Timestamp;
+                }
+
+                priceData = tempList.ToArray();
             }
 
             this.lastPrice = tickers.Last().MarketData.PriceLast;

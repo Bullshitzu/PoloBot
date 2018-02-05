@@ -12,10 +12,10 @@ namespace PoloniexBot.Trading.Rules {
             currTrigger = triggerStart;
         }
 
-        private const double StopLossTrigger = 0.85;
+        private const double StopLossTrigger = 0.8;
         private const int TimeTrigger = 43200; // 12 hours
 
-        // 12 hours = 15%
+        // 3 hours = 10%
 
         private double localTrigger;
         public double currTrigger;
@@ -34,7 +34,7 @@ namespace PoloniexBot.Trading.Rules {
             if (!values.TryGetValue("lastTickerTimestamp", out currTimestamp)) throw new VariableNotIncludedException("lastTickerTimestamp");
             if (!values.TryGetValue("lastBuyTimestamp", out buyTimestamp)) throw new VariableNotIncludedException("lastBuyTimestamp");
 
-            double timeTriggerOffset = ((currTimestamp - buyTimestamp) / TimeTrigger) * 0.15;
+            double timeTriggerOffset = ((currTimestamp - buyTimestamp) / TimeTrigger) * 0.2;
             double val = openPrice * (localTrigger + timeTriggerOffset);
 
             currTrigger = (localTrigger + timeTriggerOffset);

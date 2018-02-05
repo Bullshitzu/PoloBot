@@ -23,6 +23,8 @@ namespace PoloniexBot.GUI {
 
         private const long GraphTimeframe = 93600; // 26 hours
 
+        public bool MarkedBorder = false;
+
         public enum NetworkMessageState {
             Hide,
             Down,
@@ -149,19 +151,24 @@ namespace PoloniexBot.GUI {
                         string text = tickers.Last().MarketData.PriceLast.ToString("F2");
 
                         float width = g.MeasureString(text, Style.Fonts.Title).Width;
+
+                        Helper.DrawTextShadow(g, text, new PointF(graphMarginX + 6, 57), Style.Fonts.Title, Color.Black);
                         g.DrawString(text, Style.Fonts.Title, brush, graphMarginX + 6, 57);
 
                     }
 
-                    // Draw meanRev
+                    // Draw meanRev and stDev
                     using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
 
-                        string text = "M.Rev: " + Trading.Strategies.BaseCurrTrendUpdater.LastUSDTBTCMeanRev.ToString("F2");
-
+                        string text = "M.Rev.: " + Trading.Strategies.BaseTrendMonitor.LastUSDTBTCMeanRev.ToString("F4");
                         float width = g.MeasureString(text, Style.Fonts.Title).Width;
-
                         Helper.DrawTextShadow(g, text, new PointF(graphMarginX + 6, Height - bottomDivider - 27 - Style.Fonts.Title.Height), Style.Fonts.Title, Color.Black);
                         g.DrawString(text, Style.Fonts.Title, brush, new PointF(graphMarginX + 6, Height - bottomDivider - 27 - Style.Fonts.Title.Height));
+
+                        text = "A.D.X.: " + Trading.Strategies.BaseTrendMonitor.LastUSDTBTCADX.ToString("F");
+                        width = g.MeasureString(text, Style.Fonts.Title).Width;
+                        Helper.DrawTextShadow(g, text, new PointF(graphMarginX + 6, Height - bottomDivider - 50 - Style.Fonts.Title.Height), Style.Fonts.Title, Color.Black);
+                        g.DrawString(text, Style.Fonts.Title, brush, new PointF(graphMarginX + 6, Height - bottomDivider - 50 - Style.Fonts.Title.Height));
                     }
 
                     // Draw Network Down / Restored
@@ -182,10 +189,19 @@ namespace PoloniexBot.GUI {
                 else DrawNoData(g);
 
                 // Draw borders
-                DrawBorders(g);
+                DrawBordersCustom(g, (MarkedBorder ? Style.Colors.Terciary.Dark1 : Style.Colors.Primary.Main));
             }
             catch (Exception ex) {
                 Console.WriteLine(ex.Message + " - " + ex.StackTrace);
+            }
+        }
+
+        private void DrawBordersCustom (Graphics g, Color color) {
+            using (Pen pen = new Pen(color, 2)) {
+                g.DrawLine(pen, 1, 1, Width - 1, 1);
+                g.DrawLine(pen, 1, 1, 1, Height - 1);
+                g.DrawLine(pen, Width - 1, 1, Width - 1, Height - 1);
+                g.DrawLine(pen, 1, Height - 1, Width - 1, Height - 1);
             }
         }
 

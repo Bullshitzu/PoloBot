@@ -17,6 +17,9 @@ namespace Utility {
 
             Log.Manager.LogNetSent(address);
 
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             try {
                 UriBuilder builder = new UriBuilder(address);
                 HttpWebRequest request = WebRequest.CreateHttp(builder.Uri);

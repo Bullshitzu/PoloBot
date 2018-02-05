@@ -23,10 +23,7 @@ namespace PoloniexBot {
             public static void ClearAllData () {
                 if (marketData != null) marketData.Clear();
                 if (allowUpdatePairs != null) allowUpdatePairs.Clear();
-                if (tickerData != null) tickerData.Clear();
-            }
-            public static void ClearTickerData () {
-                if (tickerData != null) tickerData.Clear();
+                if (tickerData != null) ClearTickerData();
             }
 
             public static bool AllowTickerUpdate = true;
@@ -52,6 +49,17 @@ namespace PoloniexBot {
             // Ticker Data
             public static List<CurrencyPair> allowUpdatePairs;
             private static TSList<TSList<TickerChangedEventArgs>> tickerData;
+
+            public static void ClearTickerData () {
+                if (tickerData == null) return;
+                for (int i = 0; i < tickerData.Count; i++) {
+                    for (int j = 0; j < tickerData[i].Count; j++) {
+                        tickerData[i][j].Dispose();
+                    }
+                    tickerData[i].Clear();
+                }
+                tickerData.Clear();
+            }
 
             public static void SetTickerStoreTime (CurrencyPair pair, int time) {
                 if (TickerStoreTime == null) TickerStoreTime = new Dictionary<CurrencyPair, int>();
@@ -104,7 +112,10 @@ namespace PoloniexBot {
                         if (tickerData[i] == null) continue;
                         if (tickerData[i].Count == 0) continue;
                         if (tickerData[i][0].CurrencyPair == ticker.CurrencyPair) {
-                            while (tickerData[i][0].Timestamp < deleteTime) tickerData[i].RemoveAt(0);
+                            while (tickerData[i][0].Timestamp < deleteTime) {
+                                tickerData[i].First().Dispose();
+                                tickerData[i].RemoveAt(0);
+                            }
                             if (!ignoreTimeFilter && ticker.Timestamp - tickerData[i].Last().Timestamp < 5) return;
                             tickerData[i].Add(ticker);
                             Trading.Manager.NotifyTickerUpdate(ticker.CurrencyPair);
@@ -307,7 +318,7 @@ namespace PoloniexBot {
                 CLI.Manager.PrintLog("Clearing current ticker data");
                 if (allowUpdatePairs != null) allowUpdatePairs.Clear();
                 if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
-                tickerData.Clear();
+                ClearTickerData();
 
                 CLI.Manager.PrintLog("Loading ticker data from file");
                 string[] lines = Utility.FileManager.ReadFile("data/ticker data");

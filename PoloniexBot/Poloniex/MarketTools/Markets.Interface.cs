@@ -8,6 +8,10 @@ namespace PoloniexAPI {
         /// <summary>Gets a data summary of the markets available.</summary>
         Task<IDictionary<CurrencyPair, IMarketData>> GetSummaryAsync ();
 
+        /// <summary>Fetches the best priced orders for all markets.</summary>
+        /// <param name="depth">The number of orders to fetch from each side.</param>
+        Task<IDictionary<CurrencyPair, IOrderBook>> GetOpenOrdersAsync (uint depth);
+
         /// <summary>Fetches the best priced orders for a given market.</summary>
         /// <param name="currencyPair">The currency pair, which consists of the currency being traded on the market, and the base's code.</param>
         /// <param name="depth">The number of orders to fetch from each side.</param>

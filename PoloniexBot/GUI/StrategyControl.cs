@@ -16,10 +16,15 @@ namespace PoloniexBot.GUI {
 
         protected class PairData {
 
-            public static double[] minimums = { (-Trading.Rules.RuleMeanRev.BuyTrigger) - 3, 50 };
-            public static double[] maximums = { (-Trading.Rules.RuleMeanRev.BuyTrigger) + 3, 100 };
-            public static string[] varTitles = { "M.Rev", "ADX" };
-            public static string[] varNames = { "meanRevGUI", "adxGUI" };
+            // public static double[] minimums = { Trading.Rules.RuleMeanRev.BuyTrigger - 3, 0 };
+            // public static double[] maximums = { Trading.Rules.RuleMeanRev.BuyTrigger + 3, 100 };
+            // public static string[] varTitles = { "M.Rev.", "ADX" };
+            // public static string[] varNames = { "meanRevGUI", "adxGUI" };
+
+            public static double[] minimums = { -4 };
+            public static double[] maximums = { 4 };
+            public static string[] varTitles = { "Pred." };
+            public static string[] varNames = { "patternMatchResult" };
 
             public string quoteName;
             public double[] variables;
@@ -166,7 +171,7 @@ namespace PoloniexBot.GUI {
                                         else if (mult > max) mult = 1;
                                         else mult = (mult - min) / (max - min);
 
-                                        Brush barBrush = mult > 0.5 ? brushValid : brushInvalid;
+                                        Brush barBrush = i == 0 ? (mult > 0.5 ? brushValid : brushInvalid) : brushValid;
 
                                         g.FillRectangle(barBrush, rect.X + 5, posY, (float)mult * (rect.Width - 10), 15);
 
@@ -179,7 +184,7 @@ namespace PoloniexBot.GUI {
 
                                     // center line
 
-                                    g.DrawLine(pen, rect.X + (rect.Width / 2), rect.Y + 20, rect.X + (rect.Width / 2), rect.Y + 80);
+                                    g.DrawLine(pen, rect.X + (rect.Width / 2), rect.Y + 20, rect.X + (rect.Width / 2), rect.Y + 40);
                                 }
                             }
                         }

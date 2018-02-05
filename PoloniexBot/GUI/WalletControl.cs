@@ -39,7 +39,8 @@ namespace PoloniexBot.GUI {
 
                     double btcValue = 0;
                     for (int i = 0; i < balances.Length; i++) {
-                        btcValue += balances[i].Value.BitcoinValue;
+                        if (balances[i].Key == "BTC") btcValue += balances[i].Value.QuoteAvailable;
+                        else btcValue += balances[i].Value.BitcoinValue;
                     }
 
                     // title + BTC value
@@ -82,7 +83,7 @@ namespace PoloniexBot.GUI {
 
                     // USD worth
 
-                    double usdWorth = btcValue * Trading.Strategies.BaseCurrTrendUpdater.LastUSDTBTCPrice;
+                    double usdWorth = btcValue * Trading.Strategies.BaseTrendMonitor.LastUSDTBTCPrice;
                     string usdWorthText = usdWorth > 0 ? usdWorth.ToString("F2") : "???";
 
                     text = "$ " + usdWorthText;
@@ -121,7 +122,7 @@ namespace PoloniexBot.GUI {
                                 int cnt = 0;
 
                                 for (int i = 0; i < balances.Length; i++) {
-                                    if (balances[i].Value.BitcoinValue < 0.0000001) continue;
+                                    if (balances[i].Value.BitcoinValue < 0.00000001) continue;
 
                                     posY = 95 + (cnt * 25);
                                     cnt++;
@@ -145,9 +146,13 @@ namespace PoloniexBot.GUI {
 
                                     // btc value
 
-                                    digitCnt = GetDecimalCount((int)balances[i].Value.BitcoinValue);
+                                    btcValue = 0;
+                                    if (balances[i].Key == "BTC") btcValue = balances[i].Value.QuoteAvailable;
+                                    else btcValue = balances[i].Value.BitcoinValue;
 
-                                    parts = Helper.SplitLeadingZeros(balances[i].Value.BitcoinValue.ToString("F" + digitCnt));
+                                    digitCnt = GetDecimalCount((int)btcValue);
+
+                                    parts = Helper.SplitLeadingZeros(btcValue.ToString("F" + digitCnt));
                                     width = g.MeasureString(parts[0], Style.Fonts.Reduced).Width;
 
                                     partSpacing = parts[0] == "" ? 0 : -4;

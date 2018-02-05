@@ -138,6 +138,8 @@
     <Compile Include="Data\ANN\Neuron.cs" />
     <Compile Include="Data\ANN\Synapse.cs" />
     <Compile Include="Data\ANN\Training.cs" />
+    <Compile Include="Data\TriArbitrage\Manager.cs" />
+    <Compile Include="Data\TriArbitrage\PairMonitor.cs" />
     <Compile Include="Data\DecisionTree\Branch.cs" />
     <Compile Include="Data\DecisionTree\Tree.cs" />
     <Compile Include="Data\Optimizer.cs" />
@@ -158,6 +160,7 @@
     <Compile Include="Data\Predictors\PriceDelta.cs" />
     <Compile Include="Data\Predictors\PriceExtremes.cs" />
     <Compile Include="Data\Predictors\RSI.cs" />
+    <Compile Include="Data\Predictors\StandardDeviation.cs" />
     <Compile Include="Data\Predictors\Volume.cs" />
     <Compile Include="Data\ResultSet.cs" />
     <Compile Include="Data\Store.cs" />
@@ -258,9 +261,13 @@
     <Compile Include="Trading\Rules\RuleStopLoss.cs" />
     <Compile Include="Trading\Rules\RuleStopLossSpread.cs" />
     <Compile Include="Trading\Rules\RuleUSDTBTC.cs" />
-    <Compile Include="Trading\Strategies\BaseCurrTrendUpdater.cs" />
+    <Compile Include="Trading\Strategies\ArbitrageStep1.cs" />
+    <Compile Include="Trading\Strategies\ArbitrageStep2.cs" />
+    <Compile Include="Trading\Strategies\ArbitrageStep3.cs" />
+    <Compile Include="Trading\Strategies\BaseTrendMonitor.cs" />
     <Compile Include="Trading\Strategies\Bollinger.cs" />
-    <Compile Include="Trading\Strategies\BubbleSave.cs" />
+    <Compile Include="Trading\Strategies\Ch24.cs" />
+    <Compile Include="Trading\Strategies\LongTermTrendRider.cs" />
     <Compile Include="Trading\Strategies\LowPriceTrading.cs" />
     <Compile Include="Trading\Strategies\MeanRev.cs" />
     <Compile Include="Trading\Strategies\MeanRevDX.cs" />
@@ -274,6 +281,7 @@
     <Compile Include="Trading\Strategies\Strategy.cs" />
     <Compile Include="Trading\Strategies\TestStrategy.cs" />
     <Compile Include="Trading\Strategies\TrainingStrategy.cs" />
+    <Compile Include="Trading\Strategies\TrendRider.cs" />
     <Compile Include="Trading\TPManager.cs" />
     <Compile Include="Utility\APICallTracker.cs" />
     <Compile Include="Utility\Constants.cs" />

@@ -23,7 +23,7 @@ namespace PoloniexBot.CLI.Commands {
             this.description = description;
             this.method = method;
             parameters = new Parameter[0];
-            echoCommand = false;
+            echoCommand = true;
         }
         public Command (string keyword, string description, bool echoCommand, ExecuteMethod method) {
             this.keyword = keyword;
@@ -35,7 +35,7 @@ namespace PoloniexBot.CLI.Commands {
         public Command (string keyword, string description, Parameter[] parameters, ExecuteMethod method) {
             this.keyword = keyword;
             this.description = description;
-            this.echoCommand = false;
+            this.echoCommand = true;
             this.parameters = parameters;
             this.method = method;
         }

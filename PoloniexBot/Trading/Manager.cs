@@ -168,7 +168,6 @@ namespace PoloniexBot.Trading {
             // -------------
 
             AddPair(new CurrencyPair("USDT", "BTC"));
-            AddPair(new CurrencyPair("ETH", "BTC"));
 
             // -------------
             // Add pairs with open positions
@@ -341,6 +340,12 @@ namespace PoloniexBot.Trading {
                 IDictionary<string, IBalance> tempWallet = wallet.GetBalancesAsync().Result;
                 if (tempWallet != null) {
                     walletState = tempWallet;
+
+                    IBalance balance;
+                    if (walletState.TryGetValue("USDT", out balance)) {
+                        balance.BitcoinValue = (balance.QuoteAvailable + balance.QuoteOnOrders) / Strategies.BaseTrendMonitor.LastUSDTBTCPrice;
+                    }
+
                     GUI.GUIManager.UpdateWallet(tempWallet.ToArray());
                 }
             }
@@ -377,6 +382,15 @@ namespace PoloniexBot.Trading {
             // doesn't make any API calls, just recalculates based on local data
             try {
                 if (walletState == null) UpdateWallet();
+                else if (currency == "USDT") {
+                    IBalance balance;
+                    if (walletState.TryGetValue(currency, out balance)) {
+                        double currValue = price;
+                        double currAmount = balance.QuoteOnOrders + balance.QuoteAvailable;
+                        balance.BitcoinValue = currAmount / currValue;
+                        GUI.GUIManager.UpdateWallet(walletState.ToArray());
+                    }
+                }
                 else if (currency == "BTC") return;
                 else {
                     IBalance balance;

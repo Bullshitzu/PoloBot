@@ -15,7 +15,7 @@ namespace PoloniexBot.Data.Predictors {
         private int localTimeEMA = 3000;
         private int localTimeSMA = 3000;
 
-        public MACD (CurrencyPair pair, int timeEMA = 3000) : base(pair) {
+        public MACD (CurrencyPair pair, int timeEMA = 1800) : base(pair) {
             localTimeEMA = timeEMA;
             localTimeSMA = (int)(timeEMA * 1.2);
         }

@@ -14,7 +14,7 @@ namespace PoloniexBot {
         public static PoloniexClient client;
 
         public static bool Simulate = true;
-        public static bool Training = true;
+        public static bool Training = false;
 
         static string[] LoadApiKey () {
             return FileManager.ReadFile(keysFilename);
@@ -82,7 +82,7 @@ namespace PoloniexBot {
                 ThreadManager.Register(() => {
 
                     // Data.VariableAnalysis.AnalyzeAllPairs();
-
+                    /*
                     List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> allPairs =
                         new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
 
@@ -122,8 +122,6 @@ namespace PoloniexBot {
                     /*
                     */
 
-                    // PullArbitragePairs(7, 7);
-
                     Data.Store.SaveTradeData();
 
                     // Data.PatternMatching.Manager.BuildPatternDatabase();
@@ -154,28 +152,8 @@ namespace PoloniexBot {
                 */
                 Thread.Sleep(1000);
 
-                Trading.Manager.Start();
-                ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);
-            }
-        }
-
-        private static void PullArbitragePairs (long startDaysAgo, long dayNum) {
-
-            CurrencyPair[] downloadPairs = Data.TriArbitrage.Manager.GetTradePairs();
-
-            long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * startDaysAgo);
-            long startTimestamp = endTimestamp - (24 * 3600 * dayNum);
-
-            for (int i = 0; i < downloadPairs.Length; i++) {
-                try {
-                    Console.WriteLine("Pulling " + downloadPairs[i]);
-                    Data.Store.PullTickerHistory(downloadPairs[i], startTimestamp, endTimestamp);
-                }
-                catch (Exception e) {
-                    Console.WriteLine(e.Message + "\n" + e.StackTrace);
-                }
-
-                Thread.Sleep(2000);
+                Trading.ManagerArbitrage.Start();
+                ThreadManager.Register(Trading.ManagerArbitrage.RefreshTradePairs, "TP Refresh", true);
             }
         }
 

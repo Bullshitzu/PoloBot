@@ -21,21 +21,24 @@ namespace PoloniexBot.GUI {
             // public static string[] varTitles = { "M.Rev.", "ADX" };
             // public static string[] varNames = { "meanRevGUI", "adxGUI" };
 
-            public static double[] minimums = { -4 };
-            public static double[] maximums = { 4 };
-            public static string[] varTitles = { "Pred." };
-            public static string[] varNames = { "patternMatchResult" };
+            public static double[] minimums = { -2 };
+            public static double[] maximums = { 2 };
+            public static string[] varTitles = { "Prof." };
+            public static string[] varNames = { "score" };
 
             public string quoteName;
+            public string baseName;
             public double[] variables;
             public bool blocked = false;
 
-            public PairData (string quoteName) {
+            public PairData (string quoteName, string baseName) {
                 this.quoteName = quoteName;
+                this.baseName = baseName;
                 variables = null;
             }
-            public PairData (string quoteName, double[] vars) {
+            public PairData (string quoteName, string baseName, double[] vars) {
                 this.quoteName = quoteName;
+                this.baseName = baseName;
                 variables = vars;
             }
         }
@@ -45,7 +48,7 @@ namespace PoloniexBot.GUI {
         public void AddPairData (PoloniexAPI.CurrencyPair pair) {
             if (pairData == null) pairData = new List<PairData>();
 
-            pairData.Add(new PairData(pair.QuoteCurrency));
+            pairData.Add(new PairData(pair.QuoteCurrency, pair.BaseCurrency));
 
             UpdateModulesScreen();
         }
@@ -69,7 +72,7 @@ namespace PoloniexBot.GUI {
 
             for (int i = 0; i < pairData.Count; i++) {
                 if (pairData[i].quoteName == pair.QuoteCurrency) {
-                    pairData[i] = new PairData(pair.QuoteCurrency, vars);
+                    pairData[i] = new PairData(pair.QuoteCurrency, pair.BaseCurrency, vars);
                     return;
                 }
             }
@@ -145,6 +148,15 @@ namespace PoloniexBot.GUI {
 
             using (Brush brush = new SolidBrush(Style.Colors.Primary.Light1)) {
                 g.DrawString(title, Style.Fonts.Small, brush, rect.X + (rect.Width / 2) - (width / 2), rect.Y + 5);
+            }
+
+            // base name on bottom right
+
+            title = pairData.baseName;
+            width = g.MeasureString(title, Style.Fonts.Small).Width;
+
+            using (Brush brush = new SolidBrush(Style.Colors.Primary.Dark1)) {
+                g.DrawString(title, Style.Fonts.Small, brush, rect.X + rect.Width - width - 5, rect.Y + rect.Height - Style.Fonts.Small.Height - 3);
             }
 
             // variables

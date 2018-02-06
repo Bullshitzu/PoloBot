@@ -33,7 +33,7 @@ namespace PoloniexBot.Trading {
         static Utility.TSList<CurrencyPair> updatedPairs;
 
         // --------------------------------
-
+        
         static void Run () {
 
             UpdateWallet();

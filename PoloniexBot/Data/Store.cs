@@ -247,34 +247,20 @@ namespace PoloniexBot {
             }
 
             // Order Data
-            public static Trading.OrderLive[] PullOrderHistory (CurrencyPair pair) {
-                IOrderBook orderBook = ClientManager.client.Markets.GetOpenOrdersAsync(pair).Result;
-                if (orderBook == null) return null;
+            private static IDictionary<CurrencyPair, IOrderBook> orderBooks;
 
-                List<Trading.OrderLive> list = new List<Trading.OrderLive>();
+            public static void UpdateOrderBooks (IDictionary<CurrencyPair, IOrderBook> data) {
+                if (data == null) return;
 
-                if (orderBook.BuyOrders != null) {
-                    for (int i = 0; i < orderBook.BuyOrders.Count; i++) {
-                        Trading.OrderLive order = new Trading.OrderLive(
-                            Trading.OrderLiveType.Modify,
-                            Trading.MarketAction.Buy,
-                            orderBook.BuyOrders[i].AmountBase,
-                            orderBook.BuyOrders[i].PricePerCoin);
-                        list.Add(order);
-                    }
-                }
-                if (orderBook.SellOrders != null) {
-                    for (int i = 0; i < orderBook.SellOrders.Count; i++) {
-                        Trading.OrderLive order = new Trading.OrderLive(
-                            Trading.OrderLiveType.Modify,
-                            Trading.MarketAction.Sell,
-                            orderBook.SellOrders[i].AmountBase,
-                            orderBook.SellOrders[i].PricePerCoin);
-                        list.Add(order);
-                    }
-                }
+                orderBooks = data;
+            }
+            public static IOrderBook GetOrderBook (CurrencyPair pair) {
+                if (orderBooks == null) return null;
+                
+                IOrderBook temp = null;
+                if (orderBooks.TryGetValue(pair, out temp)) return temp;
 
-                return list.ToArray();
+                return null;
             }
 
             // Trade Data
@@ -313,7 +299,7 @@ namespace PoloniexBot {
             public static TSList<TSList<TickerChangedEventArgs>> LoadTradeData (bool addTickers = true) {
 
                 CLI.Manager.PrintLog("Clearing trade pairs");
-                Trading.Manager.ClearAllPairs();
+                Trading.ManagerArbitrage.ClearAllPairs();
 
                 CLI.Manager.PrintLog("Clearing current ticker data");
                 if (allowUpdatePairs != null) allowUpdatePairs.Clear();

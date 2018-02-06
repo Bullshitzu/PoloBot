@@ -49,7 +49,7 @@ namespace PoloniexBot.Trading {
                     strategy = new Strategies.BaseTrendMonitor(pair);
                     break;
                 default:
-                    strategy = new Strategies.LongTermTrendRider(pair);
+                    strategy = new Strategies.PatternMatching(pair);
                     break;
             }
         }

@@ -7,8 +7,16 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RulePatternMatch : TradeRule {
 
-        public static double BuyTrigger = 2;
-        public static double SellTrigger = -2;
+        public const double BuyTrigger = 2;
+        public const double SellTrigger = -2;
+
+        private double localBuyTrigger = BuyTrigger;
+        private double localSellTrigger = SellTrigger;
+
+        public RulePatternMatch (double trigger) {
+            localBuyTrigger = trigger;
+            localSellTrigger = -trigger;
+        }
 
         public override void Recalculate (Dictionary<string, double> values) {
 
@@ -16,12 +24,12 @@ namespace PoloniexBot.Trading.Rules {
 
             if (!values.TryGetValue("patternMatchResult", out signal)) throw new VariableNotIncludedException("patternMatchResult");
 
-            if (signal > BuyTrigger) {
+            if (signal > localBuyTrigger) {
                 currentResult = RuleResult.Buy;
                 return;
             }
 
-            if (signal < SellTrigger) {
+            if (signal < localSellTrigger) {
                 currentResult = RuleResult.Sell;
                 return;
             }

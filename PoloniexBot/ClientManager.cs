@@ -82,7 +82,7 @@ namespace PoloniexBot {
                 ThreadManager.Register(() => {
 
                     // Data.VariableAnalysis.AnalyzeAllPairs();
-
+                    /*
                     List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> allPairs =
                         new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
 
@@ -90,7 +90,7 @@ namespace PoloniexBot {
                     allPairs.Reverse();
 
                     long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
-                    long startTimestamp = endTimestamp - (24 * 3600 * 7);
+                    long startTimestamp = endTimestamp - (24 * 3600 * 1);
 
                     int added = 0;
 
@@ -112,7 +112,7 @@ namespace PoloniexBot {
                                 Console.WriteLine(e.Message + "\n" + e.StackTrace);
                             }
 
-                            if (added >= 20) break;
+                            if (added >= 5) break;
 
                             Thread.Sleep(2000);
                         }
@@ -122,13 +122,11 @@ namespace PoloniexBot {
                     /*
                     */
 
-                    // PullArbitragePairs(7, 7);
-
-                    Data.Store.SaveTradeData();
+                    // Data.Store.SaveTradeData();
 
                     // Data.PatternMatching.Manager.BuildPatternDatabase();
 
-                    // Data.PatternMatching.Manager.LoadFromFile();
+                    Data.PatternMatching.Manager.LoadFromFile();
 
                     Simulation.SimulateAll();
 
@@ -153,6 +151,8 @@ namespace PoloniexBot {
                 }
                 */
                 Thread.Sleep(1000);
+
+                Data.PatternMatching.Manager.LoadFromFile();
 
                 Trading.Manager.Start();
                 ThreadManager.Register(Trading.Manager.RefreshTradePairs, "TP Refresh", true);

@@ -181,6 +181,9 @@ namespace PoloniexBot.Trading {
                 }
             }
 
+            // todo: remove this after generating patterns for alts
+            return;
+
             // -------------
             // Filter BTC base and low price
             // -------------

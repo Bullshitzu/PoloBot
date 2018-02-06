@@ -10,6 +10,7 @@ namespace PoloniexBot.Trading.Strategies {
     class PatternMatching : Strategy {
 
         public PatternMatching (CurrencyPair pair) : base(pair) {
+            if (pair.BaseCurrency == "USDT") PullTickerHistoryHours = 27;
         }
 
         // ------------------------------
@@ -103,7 +104,7 @@ namespace PoloniexBot.Trading.Strategies {
             ruleSellBand = new RuleSellBand();
             ruleStopLoss = new RuleStopLoss(0.85);
 
-            rulePatternMatch = new RulePatternMatch();
+            rulePatternMatch = new RulePatternMatch(3);
 
             // order doesn't matter
             allRules = new TradeRule[] { 
@@ -129,11 +130,9 @@ namespace PoloniexBot.Trading.Strategies {
             predictorExtremes.Update(tickers);
             predictorPatternMatch.Recalculate(tickers);
 
-            if(pair.BaseCurrency == "USDT") Manager.UpdateWalletValue("USDT", tickers.Last().MarketData.PriceLast);
+            GUI.GUIManager.SetPairSummary(this.pair, tickers, lastTicker.MarketData.Volume24HourBase);
 
             Utility.TradeTracker.UpdateOpenPosition(pair, buyPrice);
-
-            GUI.GUIManager.SetPairSummary(this.pair, tickers, lastTicker.MarketData.Volume24HourBase);
         }
 
         public override void EvaluateTrade () {

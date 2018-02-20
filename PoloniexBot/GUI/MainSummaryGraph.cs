@@ -157,20 +157,6 @@ namespace PoloniexBot.GUI {
 
                     }
 
-                    // Draw meanRev and stDev
-                    using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
-
-                        string text = "M.Rev.: " + Trading.Strategies.BaseTrendMonitor.LastUSDTBTCMeanRev.ToString("F4");
-                        float width = g.MeasureString(text, Style.Fonts.Title).Width;
-                        Helper.DrawTextShadow(g, text, new PointF(graphMarginX + 6, Height - bottomDivider - 27 - Style.Fonts.Title.Height), Style.Fonts.Title, Color.Black);
-                        g.DrawString(text, Style.Fonts.Title, brush, new PointF(graphMarginX + 6, Height - bottomDivider - 27 - Style.Fonts.Title.Height));
-
-                        text = "A.D.X.: " + Trading.Strategies.BaseTrendMonitor.LastUSDTBTCADX.ToString("F");
-                        width = g.MeasureString(text, Style.Fonts.Title).Width;
-                        Helper.DrawTextShadow(g, text, new PointF(graphMarginX + 6, Height - bottomDivider - 50 - Style.Fonts.Title.Height), Style.Fonts.Title, Color.Black);
-                        g.DrawString(text, Style.Fonts.Title, brush, new PointF(graphMarginX + 6, Height - bottomDivider - 50 - Style.Fonts.Title.Height));
-                    }
-
                     // Draw Network Down / Restored
 
                     RectangleF networkMessageRect = new RectangleF(Width * 0.3f, Height * 0.25f, Width * 0.4f, Height * 0.4f);

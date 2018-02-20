@@ -58,15 +58,6 @@ namespace PoloniexBot.Trading.Strategies {
             double optTimeframe = Data.Predictors.MeanReversion.drawTimeframe;
             double optTrigger = RuleMeanRev.BuyTrigger;
 
-            try {
-                Data.VariableAnalysis.OptimizedPairData opd = Data.VariableAnalysis.GetPairData(pair);
-                optTimeframe = opd.MeanRevTimeframe;
-                optTrigger = opd.MeanRevTrigger;
-            }
-            catch (Exception e) {
-                CLI.Manager.PrintWarning("No optimized pair data for " + pair + "!");
-            }
-
             // ----------------------------------
 
             SetupRules(optTrigger);

@@ -64,9 +64,10 @@ namespace PoloniexBot {
         private void Setup () {
             try {
                 APICallTracker.Start();
-                Utility.Log.Manager.Start();
+                Utility.Log.Manager.Initialize();
                 Utility.PerformanceMonitor.Start();
                 TradeTracker.LoadData();
+                Utility.Log.Manager.LogBasicMessage("BOOT");
                 ClientManager.Reboot();
                 NetworkStatus.StartMonitoring();
             }

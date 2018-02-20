@@ -16,26 +16,24 @@ namespace PoloniexBot.GUI {
 
         protected class PairData {
 
-            // public static double[] minimums = { Trading.Rules.RuleMeanRev.BuyTrigger - 3, 0 };
-            // public static double[] maximums = { Trading.Rules.RuleMeanRev.BuyTrigger + 3, 100 };
-            // public static string[] varTitles = { "M.Rev.", "ADX" };
-            // public static string[] varNames = { "meanRevGUI", "adxGUI" };
-
-            public static double[] minimums = { -4 };
-            public static double[] maximums = { 4 };
-            public static string[] varTitles = { "Pred." };
-            public static string[] varNames = { "patternMatchResult" };
+            public static double[] minimums = { 0, 0 };
+            public static double[] maximums = { 5, 3 };
+            public static string[] varTitles = { "M.Rev", "Vol." };
+            public static string[] varNames = { "meanRev", "volumeTrend" };
 
             public string quoteName;
+            public string baseName;
             public double[] variables;
             public bool blocked = false;
 
-            public PairData (string quoteName) {
+            public PairData (string quoteName, string baseName) {
                 this.quoteName = quoteName;
+                this.baseName = baseName;
                 variables = null;
             }
-            public PairData (string quoteName, double[] vars) {
+            public PairData (string quoteName, string baseName, double[] vars) {
                 this.quoteName = quoteName;
+                this.baseName = baseName;
                 variables = vars;
             }
         }
@@ -45,7 +43,7 @@ namespace PoloniexBot.GUI {
         public void AddPairData (PoloniexAPI.CurrencyPair pair) {
             if (pairData == null) pairData = new List<PairData>();
 
-            pairData.Add(new PairData(pair.QuoteCurrency));
+            pairData.Add(new PairData(pair.QuoteCurrency, pair.BaseCurrency));
 
             UpdateModulesScreen();
         }
@@ -69,7 +67,7 @@ namespace PoloniexBot.GUI {
 
             for (int i = 0; i < pairData.Count; i++) {
                 if (pairData[i].quoteName == pair.QuoteCurrency) {
-                    pairData[i] = new PairData(pair.QuoteCurrency, vars);
+                    pairData[i] = new PairData(pair.QuoteCurrency, pair.BaseCurrency, vars);
                     return;
                 }
             }
@@ -147,6 +145,15 @@ namespace PoloniexBot.GUI {
                 g.DrawString(title, Style.Fonts.Small, brush, rect.X + (rect.Width / 2) - (width / 2), rect.Y + 5);
             }
 
+            // base name in bottom right
+
+            title = pairData.baseName;
+            width = g.MeasureString(title, Style.Fonts.Small).Width;
+
+            using (Brush brush = new SolidBrush(Style.Colors.Primary.Dark1)) {
+                g.DrawString(title, Style.Fonts.Small, brush, rect.X + rect.Width - width - 5, rect.Y + rect.Height - Style.Fonts.Small.Height - 5);
+            }
+
             // variables
             if (pairData.variables != null) {
                 float posY = rect.Y + 25;
@@ -171,7 +178,7 @@ namespace PoloniexBot.GUI {
                                         else if (mult > max) mult = 1;
                                         else mult = (mult - min) / (max - min);
 
-                                        Brush barBrush = i == 0 ? (mult > 0.5 ? brushValid : brushInvalid) : brushValid;
+                                        Brush barBrush = mult > 0.5 ? brushValid : brushInvalid;
 
                                         g.FillRectangle(barBrush, rect.X + 5, posY, (float)mult * (rect.Width - 10), 15);
 
@@ -184,7 +191,7 @@ namespace PoloniexBot.GUI {
 
                                     // center line
 
-                                    g.DrawLine(pen, rect.X + (rect.Width / 2), rect.Y + 20, rect.X + (rect.Width / 2), rect.Y + 40);
+                                    g.DrawLine(pen, rect.X + (rect.Width / 2), rect.Y + 20, rect.X + (rect.Width / 2), rect.Y + 80);
                                 }
                             }
                         }

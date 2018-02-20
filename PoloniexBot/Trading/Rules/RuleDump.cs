@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace PoloniexBot.Trading.Rules {
     class RuleDump : TradeRule {
 
-        private const int DumpTime = 21600; // 6 hours
-        private const double DumpDrop = 0.9; // 10%
+        private const int DumpTime = 3600; // 1 hour
+        private const double DumpDrop = 0.97; // 3%
 
         public override void Recalculate (Dictionary<string, double> values) {
 

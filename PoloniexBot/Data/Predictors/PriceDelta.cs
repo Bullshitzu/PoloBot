@@ -47,9 +47,9 @@ namespace PoloniexBot.Data.Predictors {
             long startTime = endTime - Timeframe;
 
             for (int i = tickers.Length-1; i >= 0; i--) {
-                if (tickers[i].Timestamp > endTime) endPrice = tickers[i].MarketData.PriceLast;
+                if (tickers[i].Timestamp > endTime) endPrice = tickers[i].MarketData.OrderTopBuy;
                 if (tickers[i].Timestamp < startTime) break;
-                startPrice = tickers[i].MarketData.PriceLast;
+                startPrice = tickers[i].MarketData.OrderTopBuy;
             }
 
             return ((endPrice - startPrice) / startPrice) * 100;

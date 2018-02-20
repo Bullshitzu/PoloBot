@@ -57,5 +57,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             Data.Store.SetTickerStoreTime(pair, PullTickerHistoryHours * 3600 + 30);
         }
+
     }
 }

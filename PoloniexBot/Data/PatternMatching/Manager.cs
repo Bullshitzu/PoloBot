@@ -17,7 +17,7 @@ namespace PoloniexBot.Data.PatternMatching {
         const string PatternsDirectory = "data";
         const string PatternsFilenamePrefix = "patterns";
 
-        const bool skipPairCheck = true;
+        const bool skipPairCheck = false;
 
         // ------------------------------------------
 
@@ -205,7 +205,17 @@ namespace PoloniexBot.Data.PatternMatching {
 
             return returnData;
         }
-        
+
+        public static bool CheckPatternsExist (CurrencyPair pair) {
+            if (Repo == null) return false;
+
+            for (int i = 0; i < Repo.Count; i++) {
+                if (Repo[i].Key == pair) return true;
+            }
+
+            return false;
+        }
+
         // ------------------------------------------
         // file save + load
         // ------------------------------------------

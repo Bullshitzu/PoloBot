@@ -182,8 +182,6 @@ namespace PoloniexBot {
             public static bool PullTickerHistory (CurrencyPair pair, long startTimestamp, long endTimestamp) {
                 if (!AllowTickerUpdate) return false;
 
-                Console.WriteLine("Pulling ticker history for " + pair);
-
                 if (tickerData == null) tickerData = new TSList<TSList<TickerChangedEventArgs>>();
                 if (allowUpdatePairs == null) allowUpdatePairs = new List<CurrencyPair>();
 
@@ -204,8 +202,6 @@ namespace PoloniexBot {
                         endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(temp.Last().Time);
 
                         failedAttempts = 0;
-
-                        Console.WriteLine(pair + " - SUCCESS");
 
                         ThreadManager.ReportAlive("Data.Store");
                         Thread.Sleep(1500);

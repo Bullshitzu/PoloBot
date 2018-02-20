@@ -138,17 +138,13 @@
     <Compile Include="Data\ANN\Neuron.cs" />
     <Compile Include="Data\ANN\Synapse.cs" />
     <Compile Include="Data\ANN\Training.cs" />
-    <Compile Include="Data\DecisionTree\Branch.cs" />
-    <Compile Include="Data\DecisionTree\Tree.cs" />
     <Compile Include="Data\Optimizer.cs" />
     <Compile Include="Data\PatternMatching\Manager.cs" />
     <Compile Include="Data\PatternMatching\Pattern.cs" />
-    <Compile Include="Data\Precalculation.cs" />
     <Compile Include="Data\Predictor.cs" />
     <Compile Include="Data\Predictors\ADX.cs" />
     <Compile Include="Data\Predictors\BollingerBands.cs" />
     <Compile Include="Data\Predictors\DirectionIndex.cs" />
-    <Compile Include="Data\Predictors\FuturePriceExtremes.cs" />
     <Compile Include="Data\Predictors\Ichimoku.cs" />
     <Compile Include="Data\Predictors\MACD.cs" />
     <Compile Include="Data\Predictors\MacdTrendBlocker.cs" />
@@ -163,7 +159,6 @@
     <Compile Include="Data\ResultSet.cs" />
     <Compile Include="Data\Store.cs" />
     <Compile Include="Data\VarAnalysis.cs" />
-    <Compile Include="Data\VariableAnalysis.cs" />
     <Compile Include="GUI\ApiCallsControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -255,15 +250,19 @@
     <Compile Include="Trading\Rules\RulePriceDelta.cs" />
     <Compile Include="Trading\Rules\RulePatternMatch.cs" />
     <Compile Include="Trading\Rules\RulePriceTrend.cs" />
+    <Compile Include="Trading\Rules\RuleRSI.cs" />
     <Compile Include="Trading\Rules\RuleSellBand.cs" />
     <Compile Include="Trading\Rules\RuleStopLoss.cs" />
     <Compile Include="Trading\Rules\RuleStopLossSpread.cs" />
     <Compile Include="Trading\Rules\RuleUSDTBTC.cs" />
+    <Compile Include="Trading\Rules\RuleVolumeRatio.cs" />
     <Compile Include="Trading\Strategies\BaseTrendMonitor.cs" />
+    <Compile Include="Trading\Strategies\BizStrat.cs" />
     <Compile Include="Trading\Strategies\Bollinger.cs" />
     <Compile Include="Trading\Strategies\Ch24.cs" />
     <Compile Include="Trading\Strategies\LongTermTrendRider.cs" />
     <Compile Include="Trading\Strategies\LowPriceTrading.cs" />
+    <Compile Include="Trading\Strategies\MACD.cs" />
     <Compile Include="Trading\Strategies\MeanRev.cs" />
     <Compile Include="Trading\Strategies\MeanRevDX.cs" />
     <Compile Include="Trading\Strategies\MeanRevADX.cs" />
@@ -275,8 +274,8 @@
     <Compile Include="Trading\Strategies\SpreadTrading.cs" />
     <Compile Include="Trading\Strategies\Strategy.cs" />
     <Compile Include="Trading\Strategies\TestStrategy.cs" />
-    <Compile Include="Trading\Strategies\TrainingStrategy.cs" />
     <Compile Include="Trading\Strategies\TrendRider.cs" />
+    <Compile Include="Trading\Strategies\VolumeTrigger.cs" />
     <Compile Include="Trading\TPManager.cs" />
     <Compile Include="Utility\APICallTracker.cs" />
     <Compile Include="Utility\Constants.cs" />

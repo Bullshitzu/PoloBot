@@ -49,19 +49,6 @@ namespace PoloniexBot.Trading.Strategies {
 
             // ----------------------------------
 
-            try {
-                Data.VariableAnalysis.OptimizedPairData opd = Data.VariableAnalysis.GetPairData(pair);
-                optTimeframe = opd.MeanRevTimeframe;
-                optTrigger = opd.MeanRevTrigger;
-            }
-            catch (Exception e) {
-                CLI.Manager.PrintWarning("No optimized pair data for " + pair + "!");
-            }
-
-            optTrigger *= 1.5;
-
-            // ----------------------------------
-
             SetupRules(optTrigger);
 
             // ----------------------------------
@@ -106,7 +93,7 @@ namespace PoloniexBot.Trading.Strategies {
             ruleSellBand = new RuleSellBand();
             ruleStopLoss = new RuleStopLoss();
 
-            ruleMacd = new RuleMACD(0);
+            ruleMacd = new RuleMACD();
             ruleMeanRev = new RuleMeanRev(optTrigger);
 
             // order doesn't matter

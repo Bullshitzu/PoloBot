@@ -48,14 +48,14 @@ namespace PoloniexBot.Data {
             public static double ExponentialMovingAverage (double[] values) {
                 if (values == null || values.Length == 0) return 0;
 
-                // 20% weight on most recent
-                double sum = 0;
+                double lastEMA = values.First();
+                
                 for (int i = 0; i < values.Length; i++) {
-                    double mult = ((i + 1) / (double)values.Length) * 0.2 + 0.9;
-                    sum += values[i] * mult;
+                    double k = 2d / (i + 1);
+                    lastEMA = (values[i] * k) + (lastEMA * (1 - k));
                 }
 
-                return sum / values.Length;
+                return lastEMA;
             }
 
             public static double ExponentialMovingAverageWilders (double[] values) {

@@ -12,12 +12,12 @@ namespace PoloniexBot.Data.Predictors {
 
         public static int HistogramValueCount = 30;
 
-        private int localTimeEMA = 3000;
-        private int localTimeSMA = 3000;
+        private int localTimeShort = 7200;
+        private int localTimeLong = 14400;
 
-        public MACD (CurrencyPair pair, int timeEMA = 1800) : base(pair) {
-            localTimeEMA = timeEMA;
-            localTimeSMA = (int)(timeEMA * 1.2);
+        public MACD (CurrencyPair pair, int timescale = 7200) : base(pair) {
+            localTimeShort = timescale;
+            localTimeLong = timescale * 2;
         }
 
         public override void SignResult (ResultSet rs) {
@@ -28,10 +28,10 @@ namespace PoloniexBot.Data.Predictors {
             TickerChangedEventArgs[] tickers = (TickerChangedEventArgs[])dataSet;
             if (tickers == null || tickers.Length == 0) return;
 
-            double ema = GetSMA(tickers, localTimeEMA);
-            double sma = GetSMA(tickers, localTimeSMA);
+            double shortEma = GetSMA(tickers, localTimeShort);
+            double longEma = GetEMA(tickers, localTimeLong);
 
-            double macd = ((ema - sma) / sma) * 100;
+            double macd = ((shortEma - longEma) / longEma) * 100;
 
             // get the histogram delta (trend)
 
@@ -41,7 +41,7 @@ namespace PoloniexBot.Data.Predictors {
                 for (int i = results.Count - 1; i >= 0; i--) {
 
                     if (i < 0) break;
-                    if (results[i].timestamp < tickers.Last().Timestamp - localTimeSMA) break;
+                    if (results[i].timestamp < tickers.Last().Timestamp - localTimeLong) break;
 
                     ResultSet.Variable rsTemp;
                     if (results[i].variables.TryGetValue("macd", out rsTemp)) {
@@ -53,8 +53,8 @@ namespace PoloniexBot.Data.Predictors {
             }
 
             ResultSet rs = new ResultSet(tickers.Last().Timestamp);
-            rs.variables.Add("emaShort", new ResultSet.Variable("EMA (" + localTimeEMA + ")", ema, 8));
-            rs.variables.Add("smaLong", new ResultSet.Variable("SMA (" + localTimeSMA + ")", sma, 8));
+            rs.variables.Add("maShort", new ResultSet.Variable("EMA (" + localTimeShort + ")", shortEma, 8));
+            rs.variables.Add("maLong", new ResultSet.Variable("EMA (" + localTimeLong + ")", longEma, 8));
             rs.variables.Add("macd", new ResultSet.Variable("MACD", macd, 8));
             rs.variables.Add("macdTrend", new ResultSet.Variable("MACD (Trend)", macdTrend, 8));
             

@@ -11,6 +11,11 @@ namespace PoloniexBot.Data.Predictors {
     class RSI : Predictor {
 
         public RSI (CurrencyPair pair) : base(pair) { }
+        public RSI (CurrencyPair pair, long timespan = RSITimespan) : base(pair) {
+            localTimespan = timespan;
+        }
+
+
         public override void SignResult (ResultSet rs) {
             rs.signature = "R.S.I.";
         }
@@ -19,6 +24,7 @@ namespace PoloniexBot.Data.Predictors {
         // Setup Vars
         // -------------------
 
+        private long localTimespan;
         const long RSITimespan = 900;
 
         // -------------------
@@ -40,7 +46,7 @@ namespace PoloniexBot.Data.Predictors {
         private double CalculateRSI (TickerChangedEventArgs[] tickers) {
 
             // find start index
-            long rsiStartTime = tickers.Last().Timestamp - RSITimespan;
+            long rsiStartTime = tickers.Last().Timestamp - localTimespan;
             int rsiStartIndex = tickers.Length - 1;
             for (int i = tickers.Length - 1; i >= 0; i--) {
                 if (tickers[i].Timestamp < rsiStartTime) break;

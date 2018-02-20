@@ -195,12 +195,6 @@ namespace PoloniexBot.Trading.Strategies {
             UpdateTrendScore(lastTicker.MarketData.PriceChangePercentage);
             int trendScorePosition = GetTrendScorePosition();
 
-            // ------------------------------------
-            // Modify MeanRev with USDT/BTC trend
-            // ------------------------------------
-
-            double usdtBtcMeanRev = BaseTrendMonitor.LastUSDTBTCMeanRev;
-
             // -------------------------------------------
             // Compile all the rule variables into a dictionary
             // -------------------------------------------

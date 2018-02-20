@@ -42,6 +42,7 @@ namespace Utility {
                             netDown = false;
 
                             new Task(() => {
+                                Utility.Log.Manager.LogBasicMessage("REBOOT");
                                 ClientManager.Reboot();
                             }).Start();
 

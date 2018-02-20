@@ -93,6 +93,18 @@ namespace PoloniexBot.GUI {
             mainForm.tradeHistoryControl1.closedPositions = doneTrades;
             mainForm.tradeHistoryControl1.Invalidate();
         }
+        public static void SetTradeHistoryEndTime (long time, bool repaint = false) {
+            mainForm.tradeHistoryControl1.chartEndTime = time;
+            if (repaint) mainForm.tradeHistoryControl1.Invalidate();
+        }
+        public static long GetTradeHistoryEndTime () {
+            return mainForm.tradeHistoryControl1.chartEndTime;
+        }
+        public static void SetTradeHistoryMessages (TSList<Utility.Log.MessageTypes.Message> basicMessages, TSList<Utility.Log.MessageTypes.ErrorMessage> errorMessages) {
+            mainForm.tradeHistoryControl1.basicMessages = basicMessages;
+            mainForm.tradeHistoryControl1.errorMessages = errorMessages;
+            mainForm.tradeHistoryControl1.Invalidate();
+        }
 
         // --------------------------
 

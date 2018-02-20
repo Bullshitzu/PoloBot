@@ -100,12 +100,12 @@ namespace PoloniexBot {
                     tpManagers[i].Reset();
                 }
 
+
+
                 // add all tickers
 
                 for (int i = startIndex; i < allTickers.Count; i++) {
                     AddTicker(allTickers[i], tpManagers, true);
-
-
 
                     if (i % 100 == 0) {
                         float percent = (((float)i) / allTickers.Count) * 100;
@@ -134,6 +134,7 @@ namespace PoloniexBot {
                     lastImproved = true;
 
                     CLI.Manager.PrintNote("New Best: " + bestScore.ToString("F8") + " BTC");
+                    Console.WriteLine("Simulation Result: " + bestScore.ToString("F8") + " BTC");
                 }
                 else {
                     // todo: revert optimizers
@@ -158,6 +159,8 @@ namespace PoloniexBot {
             if (evaluate) {
                 for (int i = 0; i < tpManagers.Count; i++) {
                     if (ticker.CurrencyPair == tpManagers[i].GetPair()) {
+
+                        PoloniexBot.GUI.GUIManager.SetTradeHistoryEndTime(ticker.Timestamp);
 
                         tpManagers[i].UpdatePredictors();
                         tpManagers[i].EvaluateAndTrade();

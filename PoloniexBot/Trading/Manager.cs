@@ -41,8 +41,10 @@ namespace PoloniexBot.Trading {
             int updateMode = 0;
 
             while (true) {
-
                 try {
+
+                    long currTime = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+                    PoloniexBot.GUI.GUIManager.SetTradeHistoryEndTime(currTime, true);
 
                     if (updatedPairs != null) {
 
@@ -163,11 +165,13 @@ namespace PoloniexBot.Trading {
             if (tradePairs == null) tradePairs = new Utility.TSList<TPManager>();
             tradePairs.Clear();
 
+            List<CurrencyPair> pairsToAdd = new List<CurrencyPair>();
+
             // -------------
             // Add USDT/BTC
             // -------------
 
-            AddPair(new CurrencyPair("USDT", "BTC"));
+            pairsToAdd.Add(new CurrencyPair("USDT", "BTC"));
 
             // -------------
             // Add pairs with open positions
@@ -175,14 +179,11 @@ namespace PoloniexBot.Trading {
 
             for (int i = 0; i < allPairs.Count; i++) {
                 if (Utility.TradeTracker.GetOpenPosition(allPairs[i].Key) > 0) {
-                    AddPair(allPairs[i].Key);
+                    pairsToAdd.Add(allPairs[i].Key);
                     allPairs.RemoveAt(i);
                     i--;
                 }
             }
-
-            // todo: remove this after generating patterns for alts
-            return;
 
             // -------------
             // Filter BTC base and low price
@@ -204,17 +205,40 @@ namespace PoloniexBot.Trading {
             allPairs.Reverse();
 
             // -------------
+            // Of top X select by volatility
+            // -------------
+
+            List<KeyValuePair<CurrencyPair, double>> filteredPairs = new List<KeyValuePair<CurrencyPair, double>>();
+            for (int i = 0; i < allPairs.Count; i++) {
+                if (i >= 25) break;
+                Data.Store.PullTickerHistory(allPairs[i].Key, 1);
+                double volatility = CalculateVolatility(allPairs[i].Key);
+                filteredPairs.Add(new KeyValuePair<CurrencyPair, double>(allPairs[i].Key, volatility));
+            }
+            
+            filteredPairs.Sort(new Utility.MarketDataComparerTrend());
+            filteredPairs.Reverse();
+
+            for (int i = 0; i < filteredPairs.Count; i++) {
+                if (pairsToAdd.Count >= 21) break;
+                pairsToAdd.Add(filteredPairs[i].Key);
+            }
+
+            // -------------
             // Add N pairs
             // -------------
 
-            for (int i = 0; i < allPairs.Count && tradePairs.Count < 22; i++) {
-                while(true) {
+            // to clear data pulled for volatility analysis...
+            Data.Store.ClearTickerData();
+
+            for (int i = 0; i < pairsToAdd.Count; i++) {
+                while (true) {
 
                     Utility.ThreadManager.ReportAlive("Trading.Manager");
 
                     try {
-                        Console.WriteLine("Adding " + allPairs[i] + " to traded pairs");
-                        AddPair(allPairs[i].Key);
+                        Console.WriteLine("Adding " + pairsToAdd[i] + " to traded pairs");
+                        AddPair(pairsToAdd[i]);
                         break;
                     }
                     catch (Exception e) {
@@ -245,12 +269,12 @@ namespace PoloniexBot.Trading {
             }
         }
 
-        private static double CalculateVolatility (CurrencyPair pair) {
+        public static double CalculateVolatility (CurrencyPair pair) {
 
             TickerChangedEventArgs[] tickers = Data.Store.GetTickerData(pair);
             if (tickers == null) throw new Exception("Couldn't recalculate predictor volatility for " + pair + " - no tickers available");
 
-            long startTime = tickers.Last().Timestamp - 10800;
+            long startTime = tickers.Last().Timestamp - 3600;
 
             // Calculate the average price
 
@@ -280,7 +304,7 @@ namespace PoloniexBot.Trading {
 
             // Normalize stDev
 
-            stDev = ((stDev - avgPrice) / avgPrice) * 100;
+            stDev = (stDev / avgPrice) * 100;
 
             return stDev;
         }

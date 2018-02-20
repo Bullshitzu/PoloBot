@@ -82,6 +82,9 @@ namespace PoloniexBot {
                 ThreadManager.Register(() => {
 
                     // Data.VariableAnalysis.AnalyzeAllPairs();
+                    
+                    long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
+                    long startTimestamp = endTimestamp - (24 * 3600 * 1);
                     /*
                     List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> allPairs =
                         new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
@@ -89,12 +92,8 @@ namespace PoloniexBot {
                     allPairs.Sort(new Utility.MarketDataComparerVolume());
                     allPairs.Reverse();
 
-                    long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * 0);
-                    long startTimestamp = endTimestamp - (24 * 3600 * 1);
-
                     int added = 0;
-
-                    Data.Store.PullTickerHistory(new CurrencyPair("USDT", "BTC"), startTimestamp, endTimestamp);
+                    // Data.Store.PullTickerHistory(new CurrencyPair("USDT", "BTC"), startTimestamp, endTimestamp);
                     
                     for (int i = 0; i < allPairs.Count; i++) {
                         if (allPairs[i].Key.BaseCurrency == "BTC") {
@@ -112,7 +111,7 @@ namespace PoloniexBot {
                                 Console.WriteLine(e.Message + "\n" + e.StackTrace);
                             }
 
-                            if (added >= 5) break;
+                            if (added >= 20) break;
 
                             Thread.Sleep(2000);
                         }
@@ -122,12 +121,10 @@ namespace PoloniexBot {
                     /*
                     */
 
-                    // Data.Store.SaveTradeData();
+                    PullMostVolatilePairs(5, 21600, startTimestamp, endTimestamp);
 
-                    // Data.PatternMatching.Manager.BuildPatternDatabase();
-
-                    Data.PatternMatching.Manager.LoadFromFile();
-
+                    Data.Store.SaveTradeData();
+                    
                     Simulation.SimulateAll();
 
                 }, "Data Pull", true);
@@ -159,17 +156,55 @@ namespace PoloniexBot {
             }
         }
 
-        private static void PullArbitragePairs (long startDaysAgo, long dayNum) {
+        // ---------------------------------------------
 
-            CurrencyPair[] downloadPairs = Data.TriArbitrage.Manager.GetTradePairs();
+        private static void PullMostVolatilePairs (int number, long volatilityMeasurePeriod, long startTimestamp, long endTimestamp) {
 
-            long endTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now) - (24 * 3600 * startDaysAgo);
-            long startTimestamp = endTimestamp - (24 * 3600 * dayNum);
+            List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>> allPairs =
+                        new List<KeyValuePair<CurrencyPair, PoloniexAPI.MarketTools.IMarketData>>(Data.Store.MarketData.ToArray());
 
-            for (int i = 0; i < downloadPairs.Length; i++) {
+            for (int i = 0; i < allPairs.Count; i++) {
+                if (allPairs[i].Key.BaseCurrency != "BTC") {
+                    allPairs.RemoveAt(i);
+                    i--;
+                }
+            }
+
+            allPairs.Sort(new Utility.MarketDataComparerVolume());
+            allPairs.Reverse();
+
+            List<KeyValuePair<CurrencyPair, double>> pairVolatilites = new List<KeyValuePair<CurrencyPair, double>>();
+
+            for (int i = 0; i < allPairs.Count && i < 30; i++) {
+
+                if (allPairs[i].Value.PriceLast < 0.00001) continue;
+
                 try {
-                    Console.WriteLine("Pulling " + downloadPairs[i]);
-                    Data.Store.PullTickerHistory(downloadPairs[i], startTimestamp, endTimestamp);
+                    Console.WriteLine("Pulling " + allPairs[i].Key + " for volatility analysis (" + i + "/30)");
+                    Data.Store.PullTickerHistory(allPairs[i].Key, endTimestamp - volatilityMeasurePeriod, endTimestamp);
+
+                    double vol = Trading.Manager.CalculateVolatility(allPairs[i].Key);
+                    pairVolatilites.Add(new KeyValuePair<CurrencyPair, double>(allPairs[i].Key, vol));
+                }
+                catch (Exception e) {
+                    Console.WriteLine(e.Message + "\n" + e.StackTrace);
+                }
+
+                Thread.Sleep(2000);
+
+            }
+
+            pairVolatilites.Sort(new Utility.MarketDataComparerTrend());
+            pairVolatilites.Reverse();
+
+            Data.Store.ClearTickerData();
+
+            for (int i = 0; i < number; i++) {
+                if (i >= pairVolatilites.Count) break;
+
+                try {
+                    Console.WriteLine("Pulling " + pairVolatilites[i]);
+                    Data.Store.PullTickerHistory(pairVolatilites[i].Key, startTimestamp, endTimestamp);
                 }
                 catch (Exception e) {
                     Console.WriteLine(e.Message + "\n" + e.StackTrace);

@@ -31,6 +31,9 @@ namespace PoloniexBot.Trading.Strategies {
 
         TradeRule rulePatternMatch;
 
+        TradeRule ruleMinSellPriceDump;
+        TradeRule ruleDump;
+
         TradeRule[] allRules = { };
 
         // ------------------------------
@@ -104,7 +107,10 @@ namespace PoloniexBot.Trading.Strategies {
             ruleSellBand = new RuleSellBand();
             ruleStopLoss = new RuleStopLoss(0.85);
 
-            rulePatternMatch = new RulePatternMatch(3);
+            ruleMinSellPriceDump = new RuleMinimumSellPriceDump();
+            ruleDump = new RuleDump();
+
+            rulePatternMatch = new RulePatternMatch(2);
 
             // order doesn't matter
             allRules = new TradeRule[] { 
@@ -114,6 +120,7 @@ namespace PoloniexBot.Trading.Strategies {
                 ruleMinQuote, ruleMinQuotePost, // minimum quote amount
                 ruleMinQuoteOrders, // minimum orders amount
                 ruleMinSellprice, ruleSellBand, ruleStopLoss,  // sell rules
+                ruleMinSellPriceDump, ruleDump, // dump rules
                 rulePatternMatch }; // buy rules
         }
 
@@ -267,6 +274,17 @@ namespace PoloniexBot.Trading.Strategies {
 
                         Sell(buyPrice, currQuoteAmount);
                         return;
+                    }
+
+                    if (ruleMinSellPriceDump.Result != RuleResult.BlockSell) {
+                        // current price is profitable (0.5%)
+
+                        if (ruleDump.Result == RuleResult.Sell) {
+                            // long time has passed since buy, price is now unpredictable so sell asap
+
+                            Sell(buyPrice, currQuoteAmount);
+                            return;
+                        }
                     }
 
                     if (ruleMinSellprice.Result != RuleResult.BlockSell) {

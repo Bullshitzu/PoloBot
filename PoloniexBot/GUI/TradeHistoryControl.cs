@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Utility.Log;
 using Utility;
 
 namespace PoloniexBot.GUI {
@@ -17,6 +18,8 @@ namespace PoloniexBot.GUI {
 
         public Utility.TSList<TradeTracker.TradeData> openPositions = null;
         public Utility.TSList<TradeTracker.TradeData> closedPositions = null;
+        public Utility.TSList<Utility.Log.MessageTypes.Message> basicMessages = null;
+        public Utility.TSList<Utility.Log.MessageTypes.ErrorMessage> errorMessages = null;
 
         private float gridWidth = 25f;
         private float gridHeight = 25f;
@@ -29,6 +32,7 @@ namespace PoloniexBot.GUI {
         int centerDivider = 0;
         int rightDivider = 0;
 
+        public long chartEndTime = 0;
         long chartTimespan = 182400; // 48 hours + 2 hours + 40 minutes
 
         protected override void OnPaint (PaintEventArgs e) {
@@ -181,10 +185,26 @@ namespace PoloniexBot.GUI {
                     }
                 }
 
+                // Draw messages
+                if (basicMessages != null) {
+                    for (int i = 0; i < basicMessages.Count; i++) {
+                        if (basicMessages[i] == null) continue;
+                        if (!basicMessages[i].DrawInHistory) continue;
+                        DrawBasicMessage(g, basicMessages[i]);
+                    }
+                }
+                if (errorMessages != null) {
+                    for (int i = 0; i < errorMessages.Count; i++) {
+                        if (errorMessages[i] == null) continue;
+                        if (!errorMessages[i].DrawInHistory) continue;
+                        DrawErrorMessage(g, errorMessages[i]);
+                    }
+                }
+
                 // Draw title
                 using (Brush brush = new SolidBrush(Style.Colors.Primary.Main)) {
 
-                    string text = "Trade History";
+                    string text = "History";
 
                     float width = g.MeasureString(text, Style.Fonts.Title).Width;
 
@@ -219,6 +239,42 @@ namespace PoloniexBot.GUI {
                 Console.WriteLine(ex.Message+" - "+ex.StackTrace);
             }
         }
+
+        // drawing messages
+
+        private void DrawBasicMessage (Graphics g, Utility.Log.MessageTypes.Message m) {
+            
+            long currTimestamp = chartEndTime;
+
+            float posXChart = (currTimestamp - Utility.DateTimeHelper.DateTimeToUnixTimestamp(m.Time)) * ((float)rightDivider / chartTimespan);
+            posXChart = rightDivider - posXChart;
+
+            if (posXChart < 0) return;
+
+            using (Brush brush = new SolidBrush(Style.Colors.Terciary.Dark2)) {
+                g.FillEllipse(brush, posXChart - 5, centerDivider - 5, 10, 10);
+
+                float width = g.MeasureString(m.Text, Style.Fonts.Tiny).Width;
+                g.DrawString(m.Text, Style.Fonts.Tiny, brush, posXChart - (width / 2), centerDivider - 8 - Style.Fonts.Tiny.Height);
+            }
+        }
+
+        private void DrawErrorMessage (Graphics g, Utility.Log.MessageTypes.ErrorMessage m) {
+            
+            long currTimestamp = chartEndTime;
+
+            float posXChart = (currTimestamp - Utility.DateTimeHelper.DateTimeToUnixTimestamp(m.Time)) * ((float)rightDivider / chartTimespan);
+            posXChart = rightDivider - posXChart;
+
+            if (posXChart < 0) return;
+
+            using (Pen pen = new Pen(Style.Colors.Secondary.Dark1, 2)) {
+                g.DrawLine(pen, posXChart - 5, centerDivider, posXChart + 5, centerDivider);
+                g.DrawLine(pen, posXChart, centerDivider - 5, posXChart, centerDivider + 5);
+            }
+        }
+
+        // drawing open / closed positions
 
         private void DrawClosedPosition (Graphics g, TradeTracker.TradeData cp, float posX, float posWidth) {
 
@@ -361,8 +417,8 @@ namespace PoloniexBot.GUI {
 
             // posX is the panel position (above the graph)
 
-            long currTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
-
+            long currTimestamp = chartEndTime;
+            
             float posXChart = (currTimestamp - timestamp) * ((float)rightDivider / chartTimespan);
             posXChart = rightDivider - posXChart;
 
@@ -379,7 +435,7 @@ namespace PoloniexBot.GUI {
 
         private void DrawGraphOpen (Graphics g, TradeTracker.TradeData op) {
 
-            long currTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+            long currTimestamp = chartEndTime;
             float posXChart = (currTimestamp - op.buyTimestamp) * ((float)rightDivider / chartTimespan);
             posXChart = rightDivider - posXChart;
 
@@ -433,7 +489,7 @@ namespace PoloniexBot.GUI {
         }
         private void DrawGraphClose (Graphics g, TradeTracker.TradeData cp) {
 
-            long currTimestamp = Utility.DateTimeHelper.DateTimeToUnixTimestamp(DateTime.Now);
+            long currTimestamp = chartEndTime;
             float posXChartOpen = (currTimestamp - cp.buyTimestamp) * ((float)rightDivider / chartTimespan);
             float posXChartClose = (currTimestamp - cp.sellTimestamp) * ((float)rightDivider / chartTimespan);
             posXChartOpen = rightDivider - posXChartOpen;

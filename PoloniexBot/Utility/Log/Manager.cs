@@ -14,39 +14,32 @@ namespace Utility.Log {
 
         const string FilenameNetLog = "Net.log";
         const string FilenameErrorLog = "Error.log";
+        const string FilenameGenericLog = "Base.log";
 
+        static TSList<MessageTypes.Message> BasicMessages;
         static TSList<MessageTypes.NetMessage> NetMessages;
         static TSList<MessageTypes.ErrorMessage> ErrorMessages;
 
-        static Thread thread;
-
-        public static void Start () {
+        public static void Initialize () {
+            if (!Directory.Exists(FolderName)) Directory.CreateDirectory(FolderName);
             NetMessages = new TSList<MessageTypes.NetMessage>();
             ErrorMessages = new TSList<MessageTypes.ErrorMessage>();
-            thread = ThreadManager.Register(Run, "Log", false);
-        }
-        public static void Stop () {
-            ThreadManager.Kill(thread);
+            BasicMessages = new TSList<MessageTypes.Message>();
         }
 
-        static void Run () {
-            if (!Directory.Exists(FolderName)) Directory.CreateDirectory(FolderName);
+        // ----------------------------------------
 
-            ErrorMessages.Clear();
-            NetMessages.Clear();
+        public static void LogBasicMessage (string message) {
+            BasicMessages.Add(new MessageTypes.Message(message));
+            ClearOldMessages();
+            SaveMessagesToFiles();
+            UpdateGUI();
+        }
+        private static void ClearOldMessages () {
+            if (BasicMessages == null) return;
 
-            return;
-            // todo: enable logging?
-            // note: eats HDD memory like mad
-
-            while (true) {
-
-                ResolveNetLogs();
-                ResolveErrorLogs();
-
-                ThreadManager.ReportAlive("Log.Manager");
-                Thread.Sleep(10);
-            }
+            long clearTime = PoloniexBot.GUI.GUIManager.GetTradeHistoryEndTime();
+            BasicMessages.RemoveAll(x => Utility.DateTimeHelper.DateTimeToUnixTimestamp(x.Time) < clearTime);
         }
 
         // ----------------------------------------
@@ -76,27 +69,79 @@ namespace Utility.Log {
         // ----------------------------------------
 
         public static void LogError (string message) {
-            // ErrorMessages.Add(new MessageTypes.ErrorMessage(message));
+            ErrorMessages.Add(new MessageTypes.ErrorMessage(message));
+            ClearOldErrorMessages();
+            SaveMessagesToFiles();
+            UpdateGUI();
         }
         public static void LogError (string message, string stackTrace) {
-            // ErrorMessages.Add(new MessageTypes.ErrorMessage(message, stackTrace));
+            ErrorMessages.Add(new MessageTypes.ErrorMessage(message, stackTrace));
+            ClearOldErrorMessages();
+            SaveMessagesToFiles();
+            UpdateGUI();
         }
-        static void ResolveErrorLogs () {
-            if (ErrorMessages.Count == 0) return;
+        private static void ClearOldErrorMessages () {
+            if (ErrorMessages == null) return;
+            
+            long clearTime = PoloniexBot.GUI.GUIManager.GetTradeHistoryEndTime();
+            ErrorMessages.RemoveAll(x => Utility.DateTimeHelper.DateTimeToUnixTimestamp(x.Time) < clearTime);
+        }
+        
+        // ----------------------------------------
 
+        public static void UpdateGUI () {
+            PoloniexBot.GUI.GUIManager.SetTradeHistoryMessages(BasicMessages, ErrorMessages);
+        }
+
+        public static void LoadMessagesFromFiles () {
+            if (BasicMessages == null) BasicMessages = new TSList<MessageTypes.Message>();
+            if (ErrorMessages == null) ErrorMessages = new TSList<MessageTypes.ErrorMessage>();
+
+            BasicMessages.Clear();
+            ErrorMessages.Clear();
+
+            string filePathBasic = FolderName + "/" + FilenameGenericLog;
+            string filePathError = FolderName + "/" + FilenameErrorLog;
+
+            // load basic messages
+            try {
+                string[] lines = Utility.FileManager.ReadFile(filePathBasic);
+                for (int i = 0; i < lines.Length; i++) {
+                    MessageTypes.Message m = MessageTypes.Message.Parse(lines[i]);
+                    BasicMessages.Add(m);
+                }
+            }
+            catch (Exception) { }
+
+            // load error messages
+            try {
+                string[] lines = Utility.FileManager.ReadFile(filePathError);
+                for (int i = 0; i < lines.Length; i++) {
+                    MessageTypes.ErrorMessage m = MessageTypes.ErrorMessage.Parse(lines[i]);
+                    ErrorMessages.Add(m);
+                }
+            }
+            catch (Exception) { }
+
+            PoloniexBot.GUI.GUIManager.SetTradeHistoryMessages(BasicMessages, ErrorMessages);
+        }
+        public static void SaveMessagesToFiles () {
+
+            // save basic messages
             List<string> lines = new List<string>();
-            while (ErrorMessages.Count > 0) {
-
-                lines.Add(ErrorMessages[0].ToString());
-                lines.Add("");
-                lines.Add("");
-
-                ErrorMessages.RemoveAt(0);
+            for (int i = 0; i < BasicMessages.Count; i++) {
+                lines.Add(BasicMessages[i].ToStringFile());
             }
 
-            FileManager.SaveFileConcat(FolderName + "/" + FilenameErrorLog, lines.ToArray());
+            FileManager.SaveFile(FolderName + "/" + FilenameGenericLog, lines.ToArray());
+
+            // save error messages
+            lines = new List<string>();
+            for (int i = 0; i < ErrorMessages.Count; i++) {
+                lines.Add(ErrorMessages[i].ToStringFile());
+            }
+
+            FileManager.SaveFile(FolderName + "/" + FilenameErrorLog, lines.ToArray());
         }
-
-
     }
 }
